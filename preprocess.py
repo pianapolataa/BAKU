@@ -32,6 +32,12 @@ with open(DATA_FOLDER / "ruka_states.pkl", "rb") as f:
 with open(DATA_FOLDER / "ruka_commanded_states.pkl", "rb") as f:
     hand_commanded_states = pickle.load(f)
 
+print(f"Number of arm_states: {len(arm_states)}")
+print(f"Number of commanded arm_states: {len(arm_commanded_states)}")
+print(f"Number of hand_states: {len(hand_states)}")
+print(f"Number of commanded hand_states: {len(hand_commanded_states)}")
+
+
 # ----------------------------
 # VIDEO LOADING (commented out for now)
 # ----------------------------
