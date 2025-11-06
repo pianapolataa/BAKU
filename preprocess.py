@@ -32,28 +32,30 @@ with open(DATA_FOLDER / "ruka_states.pkl", "rb") as f:
 with open(DATA_FOLDER / "ruka_commanded_states.pkl", "rb") as f:
     hand_commanded_states = pickle.load(f)
 
-# Load video
-video_path = DATA_FOLDER / f"cam_{CAM_INDEX}_rgb_video.avi"
-cap = cv2.VideoCapture(str(video_path))
-if not cap.isOpened():
-    raise RuntimeError(f"Cannot open video: {video_path}")
+# ----------------------------
+# VIDEO LOADING (commented out for now)
+# ----------------------------
+# video_path = DATA_FOLDER / f"cam_{CAM_INDEX}_rgb_video.avi"
+# cap = cv2.VideoCapture(str(video_path))
+# if not cap.isOpened():
+#     raise RuntimeError(f"Cannot open video: {video_path}")
 
-frames = []
-frame_timestamps = []
+# frames = []
+# frame_timestamps = []
 
-print("Reading video frames...")
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-    frame = cv2.resize(frame, IMG_SIZE)
-    frames.append(frame)
-    # approximate timestamp based on frame index / fps
-    timestamp = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-    frame_timestamps.append(timestamp)
-cap.release()
+# print("Reading video frames...")
+# while True:
+#     ret, frame = cap.read()
+#     if not ret:
+#         break
+#     frame = cv2.resize(frame, IMG_SIZE)
+#     frames.append(frame)
+#     # approximate timestamp based on frame index / fps
+#     timestamp = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
+#     frame_timestamps.append(timestamp)
+# cap.release()
 
-frames = np.array(frames)
+# frames = np.array(frames)
 
 # ----------------------------
 # SYNCHRONIZE DATA
@@ -66,17 +68,33 @@ def interpolate_state(states, target_time):
 
 print("Synchronizing data...")
 observations = []
-for i, t in enumerate(tqdm(frame_timestamps if NUM_FRAMES is None else frame_timestamps[:NUM_FRAMES])):
-    obs = {}
-    obs["pixels0"] = frames[i]
 
-    obs["cartesian_states"] = interpolate_state(arm_states, t)
-    obs["commanded_cartesian_states"] = interpolate_state(arm_commanded_states, t)
+# If video exists, sync by frame_timestamps; otherwise just use PKLs directly
+if False:  # Change to True when you have video
+    for i, t in enumerate(tqdm(frame_timestamps if NUM_FRAMES is None else frame_timestamps[:NUM_FRAMES])):
+        obs = {}
+        obs["pixels0"] = frames[i]
 
-    obs["gripper_states"] = interpolate_state(hand_states, t)
-    obs["commanded_gripper_states"] = interpolate_state(hand_commanded_states, t)
+        obs["cartesian_states"] = interpolate_state(arm_states, t)
+        obs["commanded_cartesian_states"] = interpolate_state(arm_commanded_states, t)
 
-    observations.append(obs)
+        obs["gripper_states"] = interpolate_state(hand_states, t)
+        obs["commanded_gripper_states"] = interpolate_state(hand_commanded_states, t)
+
+        observations.append(obs)
+else:
+    # Use PKLs only, with dummy pixels
+    for i in tqdm(range(len(arm_states) if NUM_FRAMES is None else NUM_FRAMES)):
+        obs = {}
+        obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)  # dummy image
+
+        obs["cartesian_states"] = np.array(arm_states[i]["state"], dtype=np.float32)
+        obs["commanded_cartesian_states"] = np.array(arm_commanded_states[i]["state"], dtype=np.float32)
+
+        obs["gripper_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
+        obs["commanded_gripper_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
+
+        observations.append(obs)
 
 # ----------------------------
 # COMPUTE MIN/MAX BOUNDS
