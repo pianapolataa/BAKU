@@ -42,6 +42,7 @@ print(f"Number of commanded hand_states: {len(hand_commanded_states)}")
 # ----------------------------
 print("Synchronizing data...")
 observations = []
+timestamps = []  # store timestamps for all synchronized frames
 
 # Extract timestamps
 arm_times = np.array([s["timestamp"] for s in arm_states])
@@ -51,6 +52,7 @@ hand_times = np.array([s["timestamp"] for s in hand_states])
 for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM_FRAMES])):
     obs = {}
     obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)  # dummy image
+    obs["timestamp"] = float(t)  # store timestamp for this frame
 
     # Find closest arm frame to this hand timestamp
     arm_idx = np.argmin(np.abs(arm_times - t))
@@ -67,6 +69,7 @@ for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM
     obs["commanded_gripper_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
 
     observations.append(obs)
+    timestamps.append(float(t))
 
 # ----------------------------
 # COMPUTE MIN/MAX BOUNDS
@@ -93,6 +96,7 @@ task_emb = np.zeros(256, dtype=np.float32)
 # ----------------------------
 data = {
     "observations": observations,
+    "timestamps": np.array(timestamps, dtype=np.float64),
     "max_cartesian": max_cartesian,
     "min_cartesian": min_cartesian,
     "max_gripper": max_gripper,
@@ -104,4 +108,4 @@ save_file = SAVE_PATH / f"{TASK_NAME}.pkl"
 with open(save_file, "wb") as f:
     pickle.dump(data, f)
 
-print(f"Saved processed data to {save_file}")
+print(f"Saved processed data (with timestamps) to {save_file}")
