@@ -88,8 +88,9 @@ else:
         obs = {}
         obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)  # dummy image
 
-        obs["cartesian_states"] = np.array(arm_states[i]["state"], dtype=np.float32)
-        obs["commanded_cartesian_states"] = np.array(arm_commanded_states[i]["state"], dtype=np.float32)
+        # Extract Franka joint positions
+        obs["cartesian_states"] = np.concatenate([arm_states[i].ee_pos, arm_states[i].ee_quat]).astype(np.float32)
+        obs["commanded_cartesian_states"] = np.concatenate([arm_commanded_states[i].pos, arm_commanded_states[i].quat]).astype(np.float32)
 
         obs["gripper_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
         obs["commanded_gripper_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
