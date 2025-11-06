@@ -37,78 +37,36 @@ print(f"Number of commanded arm_states: {len(arm_commanded_states)}")
 print(f"Number of hand_states: {len(hand_states)}")
 print(f"Number of commanded hand_states: {len(hand_commanded_states)}")
 
-
 # ----------------------------
-# VIDEO LOADING (commented out for now)
+# SYNCHRONIZE DATA (hand timestamps as reference)
 # ----------------------------
-# video_path = DATA_FOLDER / f"cam_{CAM_INDEX}_rgb_video.avi"
-# cap = cv2.VideoCapture(str(video_path))
-# if not cap.isOpened():
-#     raise RuntimeError(f"Cannot open video: {video_path}")
-
-# frames = []
-# frame_timestamps = []
-
-# print("Reading video frames...")
-# while True:
-#     ret, frame = cap.read()
-#     if not ret:
-#         break
-#     frame = cv2.resize(frame, IMG_SIZE)
-#     frames.append(frame)
-#     # approximate timestamp based on frame index / fps
-#     timestamp = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000.0
-#     frame_timestamps.append(timestamp)
-# cap.release()
-
-# frames = np.array(frames)
-
-# ----------------------------
-# SYNCHRONIZE DATA
-# ----------------------------
-def interpolate_state(states, target_time):
-    """Find the closest state to the target timestamp."""
-    times = np.array([s["timestamp"] for s in states])
-    idx = np.argmin(np.abs(times - target_time))
-    return np.array(states[idx]["state"], dtype=np.float32)
-
 print("Synchronizing data...")
 observations = []
 
-# If video exists, sync by frame_timestamps; otherwise just use PKLs directly
-if False:  # Change to True when you have video
-    for i, t in enumerate(tqdm(frame_timestamps if NUM_FRAMES is None else frame_timestamps[:NUM_FRAMES])):
-        obs = {}
-        obs["pixels0"] = frames[i]
+# Extract timestamps
+arm_times = np.array([s["timestamp"] for s in arm_states])
+hand_times = np.array([s["timestamp"] for s in hand_states])
 
-        obs["cartesian_states"] = interpolate_state(arm_states, t)
-        obs["commanded_cartesian_states"] = interpolate_state(arm_commanded_states, t)
+# Loop over hand frames
+for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM_FRAMES])):
+    obs = {}
+    obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)  # dummy image
 
-        obs["gripper_states"] = interpolate_state(hand_states, t)
-        obs["commanded_gripper_states"] = interpolate_state(hand_commanded_states, t)
+    # Find closest arm frame to this hand timestamp
+    arm_idx = np.argmin(np.abs(arm_times - t))
 
-        observations.append(obs)
-else:
-    # Use PKLs only, with dummy pixels
-    for i in tqdm(range(len(arm_states) if NUM_FRAMES is None else NUM_FRAMES)):
-        obs = {}
-        obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)  # dummy image
+    # Extract Franka joint positions
+    arm_state = arm_states[arm_idx]['state']
+    commanded_arm_state = arm_commanded_states[arm_idx]['state']
 
-        # Extract Franka joint positions
-        obs["cartesian_states"] = np.concatenate([
-            arm_states[i]['state'].pos,
-            arm_states[i]['state'].quat
-        ]).astype(np.float32)
+    obs["cartesian_states"] = np.concatenate([arm_state.pos, arm_state.quat]).astype(np.float32)
+    obs["commanded_cartesian_states"] = np.concatenate([commanded_arm_state.pos, commanded_arm_state.quat]).astype(np.float32)
 
-        obs["commanded_cartesian_states"] = np.concatenate([
-            arm_commanded_states[i]['state'].pos,
-            arm_commanded_states[i]['state'].quat
-        ]).astype(np.float32)
+    # Hand/gripper states
+    obs["gripper_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
+    obs["commanded_gripper_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
 
-        obs["gripper_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
-        obs["commanded_gripper_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
-
-        observations.append(obs)
+    observations.append(obs)
 
 # ----------------------------
 # COMPUTE MIN/MAX BOUNDS
