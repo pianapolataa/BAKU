@@ -52,12 +52,12 @@ print("  Commanded Gripper shape:", o0["commanded_gripper_states"].shape)
 # ----------------------------
 # TIMESTAMP CONSISTENCY CHECK
 # ----------------------------
-print("\nChecking synchronization (sample of first 10 hand frames)...")
+print("\nChecking synchronization (sample of first 100 hand frames)...")
 
 arm_times = np.array([s["timestamp"] for s in arm_states])
 hand_times = np.array([s["timestamp"] for s in hand_states])
 
-for i in range(min(10, len(hand_states))):
+for i in range(min(100, len(hand_states))):
     t = hand_states[i]["timestamp"]
     closest_arm_idx = np.argmin(np.abs(arm_times - t))
     print(f"  Hand[{i}] time={t:.3f}, matched Arm[{closest_arm_idx}] time={arm_times[closest_arm_idx]:.3f}, Δ={abs(t - arm_times[closest_arm_idx]):.4f}s")
