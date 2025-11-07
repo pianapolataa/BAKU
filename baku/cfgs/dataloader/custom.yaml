@@ -2,7 +2,7 @@ defaults:
   - _self_
 
 bc_dataset:
-  _target_: read_data.custom.bc_dataset 
+  _target_: read_data.custom.BCDataset 
   path: "/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/proc_data"
   suite: ${suite.name}                  # references custom suite
   num_demos_per_task: ${num_demos_per_task}

@@ -1,6 +1,6 @@
 from custom_suite import PKLDataset
 
-def bc_dataset(demo_folder):
+def BCDataset(demo_folder):
     """
     Returns iterable dataset for BAKU BC training.
     """
