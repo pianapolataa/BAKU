@@ -10,8 +10,8 @@ bc_dataset:
   history: ${suite.history}
   history_len: ${suite.history_len}
   prompt: ${prompt}
-  scenes: ["demonstration_0"]
-  tasks: ["demonstration_0"]
+  scenes: ["default_scene"]
+  tasks: ["demo_task"]
   temporal_agg: ${temporal_agg}
   num_queries: ${num_queries}
   img_size: 128
