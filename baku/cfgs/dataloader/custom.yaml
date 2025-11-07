@@ -2,8 +2,15 @@ defaults:
   - _self_
 
 bc_dataset:
-  _target_: 'custom.bc_dataset'
-  demo_folder: '/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/proc_data'
-shuffle: true
-batch_size: 64
-num_workers: 4
+  _target_: read_data.custom.BCDataset   # replace with your actual dataloader class
+  path: "/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/proc_data"
+  suite: ${suite.name}                  # references custom suite
+  num_demos_per_task: ${num_demos_per_task}
+  obs_type: ${obs_type}
+  history: ${suite.history}
+  history_len: ${suite.history_len}
+  prompt: ${prompt}
+  temporal_agg: ${temporal_agg}
+  num_queries: ${num_queries}
+  img_size: 128
+  store_actions: true

@@ -1,9 +1,44 @@
 defaults:
   - _self_
 
-suite:
-  _target_: 'custom_suite.make'
+suite: custom
+name: "custom"
+
+# task settings
+frame_stack: 1
+action_repeat: 1
+discount: 0.99
+hidden_dim: 256
+
+# train settings
+num_train_steps: 601000
+log_every_steps: 1000
+save_every_steps: 200000
+history: false
+history_len: 10
+
+# eval
+eval_every_steps: 200000
+num_eval_episodes: 10
+eval_history_len: 5
+
+# obs_keys
+pixel_keys: ["pixels", "pixels_egocentric"]
+proprio_key: "proprioceptive"
+feature_key: "features"
+
+# snapshot
+save_snapshot: true
+
+# task make function
+task_make_fn:
+  _target_: custom_suite.make
   demo_folder: '/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/proc_data'
-  num_frames: 1
-  eval: false
-  hidden_dim: 256   # default value; can be overridden via CLI
+  frame_stack: ${suite.frame_stack}
+  action_repeat: ${suite.action_repeat}
+  seed: ${seed}
+  height: 128
+  width: 128
+  max_episode_len: 100  # choose a default max length for your task
+  max_state_dim: 1000   # adjust based on your data
+  eval: ${eval}
