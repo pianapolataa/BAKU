@@ -173,11 +173,6 @@ for i, t in enumerate(tqdm(arm_times if NUM_FRAMES is None else arm_times[:NUM_F
     hand_idx = np.argmin(np.abs(hand_times - t))
     time_diff = abs(hand_times[hand_idx] - t)
 
-    # Skip if timestamps differ by more than 0.05s
-    if time_diff > 0.05:
-        skipped += 1
-        continue
-
     obs = {}
     obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)  # dummy image
     obs["timestamp"] = float(t)  # use arm timestamp
