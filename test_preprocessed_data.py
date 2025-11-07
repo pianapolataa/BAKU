@@ -44,10 +44,10 @@ print("\nChecking observation shapes...")
 
 o0 = observations[0]
 print("  Pixels shape:", o0["pixels0"].shape)
-print("  Cartesian shape:", o0["cartesian_states"].shape)
-print("  Commanded Cartesian shape:", o0["commanded_cartesian_states"].shape)
-print("  Gripper shape:", o0["gripper_states"].shape)
-print("  Commanded Gripper shape:", o0["commanded_gripper_states"].shape)
+print("  arm shape:", o0["arm_states"].shape)
+print("  Commanded arm shape:", o0["commanded_arm_states"].shape)
+print("  ruka shape:", o0["ruka_states"].shape)
+print("  Commanded ruka shape:", o0["commanded_ruka_states"].shape)
 
 # ----------------------------
 # TIMESTAMP CONSISTENCY CHECK
@@ -67,15 +67,15 @@ for i in range(min(100, len(hand_states))):
 # ----------------------------
 print("\nChecking numeric ranges...")
 
-max_cartesian = data["max_cartesian"]
-min_cartesian = data["min_cartesian"]
-max_gripper = data["max_gripper"]
-min_gripper = data["min_gripper"]
+max_cartesian = data["max_arm"]
+min_cartesian = data["min_arm"]
+max_gripper = data["max_ruka"]
+min_gripper = data["min_ruka"]
 
-print("  Cartesian range:")
+print("  arm range:")
 print("    min:", np.round(min_cartesian, 4))
 print("    max:", np.round(max_cartesian, 4))
-print("  Gripper range:")
+print("  ruka range:")
 print("    min:", np.round(min_gripper, 4))
 print("    max:", np.round(max_gripper, 4))
 
@@ -83,33 +83,10 @@ print("    max:", np.round(max_gripper, 4))
 # VALUE SANITY CHECK (no NaNs, infs)
 # ----------------------------
 print("\nChecking for NaN or inf values...")
-for key in ["cartesian_states", "gripper_states"]:
+for key in ["arm_states", "ruka_states"]:
     vals = np.stack([o[key] for o in observations])
     if np.isnan(vals).any() or np.isinf(vals).any():
         print(f"  ⚠️  {key} contains invalid values!")
     else:
         print(f"  ✅  {key} valid.")
 
-# ----------------------------
-# OPTIONAL: VISUALIZE SMOOTHNESS
-# ----------------------------
-print("\nPlotting first Cartesian vs Gripper dimension to visualize sync...")
-
-cartesian_vals = [o["cartesian_states"][0] for o in observations]
-gripper_vals = [o["gripper_states"][0] for o in observations]
-
-plt.figure(figsize=(8, 4))
-plt.plot(cartesian_vals, label="Arm (first pos component)")
-plt.plot(gripper_vals, label="Hand (first finger state)")
-plt.legend()
-plt.title("Arm vs Hand Value Evolution (first components)")
-plt.xlabel("Frame index")
-plt.ylabel("Value")
-plt.tight_layout()
-plt.show()
-
-# ----------------------------
-# SUMMARY
-# ----------------------------
-print("\n✅ Verification complete.")
-print("If the timestamp deltas are small (<0.02s typical), and plots are smooth, your preprocessing is correct.")
