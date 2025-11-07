@@ -87,3 +87,22 @@ class PKLDataset(Dataset):
                 "actions": torch.tensor(act, dtype=torch.float32),
                 "task_emb": task_emb
             }
+
+
+# === NEW: entry point for BAKU ===
+def make(demo_folder: str, obs_type: str = "pixels", history_len: int = 1, eval: bool = False):
+    """
+    BAKU entry point. Scans the given folder for all .pkl demos
+    and returns train/val datasets.
+    """
+    demo_root = Path(demo_folder) / "default_scene" / "demo_task"
+    demo_paths = sorted(demo_root.glob("*.pkl"))
+    if not demo_paths:
+        raise FileNotFoundError(f"No .pkl demos found under {demo_root}")
+
+    print(f"[custom_suite] Loaded {len(demo_paths)} demos from {demo_root}")
+
+    train_dataset = PKLDataset(demo_paths, obs_type=obs_type, history_len=history_len)
+    val_dataset = train_dataset  # simple reuse for now
+
+    return dict(train=train_dataset, val=val_dataset)
