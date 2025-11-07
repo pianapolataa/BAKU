@@ -66,12 +66,12 @@ for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM
     arm_state = arm_states[arm_idx]['state']
     commanded_arm_state = arm_commanded_states[arm_idx]['state']
 
-    obs["cartesian_states"] = np.concatenate([arm_state.pos, arm_state.quat]).astype(np.float32)
-    obs["commanded_cartesian_states"] = np.concatenate([commanded_arm_state.pos, commanded_arm_state.quat]).astype(np.float32)
+    obs["arm_states"] = np.concatenate([arm_state.pos, arm_state.quat]).astype(np.float32)
+    obs["commanded_arm_states"] = np.concatenate([commanded_arm_state.pos, commanded_arm_state.quat]).astype(np.float32)
 
     # Hand/gripper states
-    obs["gripper_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
-    obs["commanded_gripper_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
+    obs["ruka_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
+    obs["commanded_ruka_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
 
     observations.append(obs)
     timestamps.append(float(t))
@@ -81,14 +81,14 @@ for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM
 # ----------------------------
 print("Computing min/max bounds...")
 
-cartesian_stack = np.stack([o["cartesian_states"] for o in observations], axis=0)
-hand_stack = np.stack([o["gripper_states"] for o in observations], axis=0)
+arm_stack = np.stack([o["arm_states"] for o in observations], axis=0)
+hand_stack = np.stack([o["ruka_states"] for o in observations], axis=0)
 
-max_cartesian = np.max(cartesian_stack, axis=0)
-min_cartesian = np.min(cartesian_stack, axis=0)
+max_arm = np.max(arm_stack, axis=0)
+min_arm = np.min(arm_stack, axis=0)
 
-max_gripper = np.max(hand_stack, axis=0)
-min_gripper = np.min(hand_stack, axis=0)
+max_ruka = np.max(hand_stack, axis=0)
+min_ruka = np.min(hand_stack, axis=0)
 
 # ----------------------------
 # TASK EMBEDDING (dummy)
@@ -102,10 +102,10 @@ task_emb = np.zeros(256, dtype=np.float32)
 data = {
     "observations": observations,
     "timestamps": np.array(timestamps, dtype=np.float64),
-    "max_cartesian": max_cartesian,
-    "min_cartesian": min_cartesian,
-    "max_gripper": max_gripper,
-    "min_gripper": min_gripper,
+    "max_arm": max_arm,
+    "min_arm": min_arm,
+    "max_ruka": max_ruka,
+    "min_ruka": min_ruka,
     "task_emb": task_emb
 }
 
