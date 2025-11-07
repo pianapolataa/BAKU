@@ -1,100 +1,89 @@
-# custom_suite.py
-
-import pickle
-import numpy as np
+# suite/custom_suite.py
 from pathlib import Path
+from typing import List
+import pickle
+import torch
 from torch.utils.data import Dataset
 
 
 class PKLDataset(Dataset):
     """
-    Iterable dataset for BAKU, works with multiple demo PKLs.
-    Each PKL should be preprocessed like your previous script:
-    {
-        "observations": [...],
-        "timestamps": [...],
-        "max_cartesian": ...,
-        "min_cartesian": ...,
-        "max_gripper": ...,
-        "min_gripper": ...,
-        "task_emb": ...
-    }
+    Dataset for loading pickled demonstrations for BC training.
+    Compatible with WorkspaceIL and BCDataset loader.
     """
 
-    def __init__(self, demo_folder: str):
-        self.demo_folder = Path(demo_folder)
-        self.pkl_files = sorted(self.demo_folder.glob("*.pkl"))
-        self.frames = []
-        self.load_all()
+    def __init__(
+        self,
+        demo_paths: List[Path],
+        obs_type: str = "pixels",
+        history_len: int = 1,
+    ):
+        self.demo_paths = demo_paths
+        self.obs_type = obs_type
+        self.history_len = history_len
+        self.episodes = []
 
-    def load_all(self):
-        """Load all PKLs and flatten frames into a single list."""
-        self.frames = []
-        for pkl_file in self.pkl_files:
-            with open(pkl_file, "rb") as f:
+        for path in demo_paths:
+            with open(path, "rb") as f:
                 data = pickle.load(f)
-            for obs in data["observations"]:
-                frame = {
-                    "cartesian_states": np.array(obs["cartesian_states"], dtype=np.float32),
-                    "commanded_cartesian_states": np.array(obs["commanded_cartesian_states"], dtype=np.float32),
-                    "gripper_states": np.array(obs["gripper_states"], dtype=np.float32),
-                    "commanded_gripper_states": np.array(obs["commanded_gripper_states"], dtype=np.float32),
-                    "task_emb": np.array(data["task_emb"], dtype=np.float32),
-                    "timestamp": obs["timestamp"],
-                }
-                # Combine commanded_arm + commanded_gripper into a single action vector
-                frame["action"] = np.concatenate([
-                    frame["commanded_cartesian_states"],
-                    frame["commanded_gripper_states"]
-                ]).astype(np.float32)
+                observations = data["observations"] if obs_type == "pixels" else data["states"]
+                actions = data["actions"]
+                task_emb = data.get("task_emb", None)
+                for i in range(len(observations)):
+                    self.episodes.append({
+                        "observation": observations[i],
+                        "action": actions[i],
+                        "task_emb": task_emb
+                    })
 
-                self.frames.append(frame)
+        self.num_samples = len(self.episodes)
+
+        # Infer specs
+        sample_obs = self.episodes[0]["observation"]
+        sample_action = self.episodes[0]["action"]
+        if isinstance(sample_obs, dict):  # pixel observations
+            self.obs_spec = {
+                "pixels": sample_obs["pixels"].shape,
+                "pixels_egocentric": sample_obs.get("pixels_egocentric", sample_obs["pixels"]).shape,
+                "features": (100,),  # dummy features
+                "proprioceptive": (sample_obs.get("proprioceptive", sample_obs["pixels"].flatten()).shape[0],),
+            }
+        else:  # features only
+            self.obs_spec = {"features": sample_obs.shape}
+
+        self.action_spec = sample_action.shape
+        self._max_episode_len = self.num_samples
+        self._max_state_dim = self.obs_spec.get("features", (100,))[0]
+        self._max_action_dim = self.action_spec[0]
 
     def __len__(self):
-        return len(self.frames)
+        return self.num_samples
 
     def __getitem__(self, idx):
-        return self.frames[idx]
+        ep = self.episodes[idx]
+        obs = ep["observation"]
+        act = ep["action"]
+        task_emb = ep["task_emb"]
 
-
-def make(demo_folder, num_frames=1, eval=False):
-    """
-    Minimal suite function for BAKU.
-    Returns:
-        envs: list of env-like objects
-        task_descriptions: list of task embeddings
-    """
-    dataset = PKLDataset(demo_folder)
-
-    class DummyEnv:
-        def __init__(self, dataset):
-            self.dataset = dataset
-            self.idx = 0
-            self._obs_spec = {
-                "features": np.zeros_like(dataset[0]["cartesian_states"]),
-                "proprioceptive": np.zeros_like(dataset[0]["gripper_states"]),
-                "pixels": np.zeros((3, 128, 128), dtype=np.uint8),
-                "task_emb": np.zeros_like(dataset[0]["task_emb"]),
+        if self.obs_type == "pixels" and isinstance(obs, dict):
+            pixels = obs["pixels"][-self.history_len:]
+            pixels_tensor = torch.stack([torch.tensor(p, dtype=torch.float32) for p in pixels])
+            return {
+                "pixels": pixels_tensor,
+                "actions": torch.tensor(act, dtype=torch.float32),
+                "task_emb": task_emb
             }
-            self._action_spec = np.zeros_like(dataset[0]["action"])
-
-        def reset(self):
-            self.idx = 0
-            return self.dataset[self.idx]
-
-        def step(self, action):
-            self.idx += 1
-            done = self.idx >= len(self.dataset)
-            obs = self.dataset[self.idx - 1] if not done else self.dataset[-1]
-            reward = 0.0
-            return obs, reward, done, {}
-
-        def observation_spec(self):
-            return self._obs_spec
-
-        def action_spec(self):
-            return self._action_spec
-
-    envs = [DummyEnv(dataset)]
-    task_descriptions = [dataset[0]["task_emb"]]
-    return envs, task_descriptions
+        elif self.obs_type == "features":
+            obs_array = obs[-self.history_len:] if isinstance(obs, (list, tuple)) else [obs]
+            return {
+                "features": torch.tensor(obs_array, dtype=torch.float32),
+                "actions": torch.tensor(act, dtype=torch.float32),
+                "task_emb": task_emb
+            }
+        else:
+            # fallback for raw pixels
+            return {
+                "pixels": torch.tensor(obs, dtype=torch.float32),
+                "actions": torch.tensor(act, dtype=torch.float32),
+                "task_emb": task_emb
+            }
