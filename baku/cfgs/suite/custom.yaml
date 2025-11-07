@@ -1,7 +1,9 @@
 defaults:
   - _self_
 
-_target_: 'custom_suite.make'
-demo_folder: '/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/proc_data'
-num_frames: 1
-eval: false
+suite:
+  _target_: 'custom_suite.make'
+  demo_folder: '/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/proc_data'
+  num_frames: 1
+  eval: false
+  hidden_dim: 256   # default value; can be overridden via CLI
