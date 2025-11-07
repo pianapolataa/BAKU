@@ -7,10 +7,10 @@ from tqdm import tqdm
 # ----------------------------
 # CONFIGURATION
 # ----------------------------
-DATA_FOLDER = Path("/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/data/demonstration_0")  # folder containing your PKLs/videos
+DATA_FOLDER = Path("/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/data/demonstration_1")  # folder containing your PKLs/videos
 CAM_INDEX = 0                                    # index of the camera you want to use
 IMG_SIZE = (128, 128)                            # resize images to this
-SAVE_PATH = Path("processed_data_pkl")
+SAVE_PATH = Path("processed_data_1_pkl")
 SAVE_PATH.mkdir(parents=True, exist_ok=True)
 TASK_NAME = "demo_task"                          # arbitrary task name for BAKU
 NUM_FRAMES = None                                # optionally limit number of frames
