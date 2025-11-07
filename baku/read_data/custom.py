@@ -47,7 +47,10 @@ class BCDataset(IterableDataset):
         for scene in scenes:
             scene_path = base_path / scene
             if scene_path.exists():
-                self.paths.extend(list(scene_path.glob("*.pkl")))
+                for task in tasks:
+                    task_path = scene_path / task
+                    if task_path.exists():
+                        self.paths.extend(list(task_path.glob("*.pkl")))
 
         # Load episodes
         self.episodes = []
