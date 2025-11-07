@@ -1,8 +1,8 @@
 defaults:
   - _self_
   - agent: baku
-  - suite: custom
-  - dataloader: custom
+  - suite: libero
+  - dataloader: libero
   - override hydra/launcher: submitit_local
 
 # Root Dir
@@ -23,7 +23,7 @@ encoder_type: 'resnet' # base, resnet
 policy_type: 'gpt' # mlp, gpt
 policy_head: deterministic # deterministic, gmm, bet, diffusion, vqbet
 use_proprio: true
-use_language: false
+use_language: true
 use_actions: false
 prompt: text # text, goal, intermediate_goal
 eval: false
