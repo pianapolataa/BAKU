@@ -1,4 +1,4 @@
-from custom_suite import PKLDataset
+from suite.custom_suite import PKLDataset
 
 def BCDataset(demo_folder):
     """
