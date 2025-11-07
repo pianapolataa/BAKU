@@ -114,23 +114,23 @@
 #     pickle.dump(data, f)
 
 # print(f"Saved processed data (with timestamps) to {save_file}")
-
 import pickle
 import cv2
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
+from scipy.spatial.transform import Rotation as R, Slerp
 
 # ----------------------------
 # CONFIGURATION
 # ----------------------------
 DATA_FOLDER = Path("/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/data/demonstration_0")  # folder containing your PKLs/videos
-CAM_INDEX = 0                                    # index of the camera you want to use
-IMG_SIZE = (128, 128)                            # resize images to this
+CAM_INDEX = 0
+IMG_SIZE = (128, 128)
 SAVE_PATH = Path("processed_data_pkl")
 SAVE_PATH.mkdir(parents=True, exist_ok=True)
-TASK_NAME = "demo_task"                          # arbitrary task name for BAKU
-NUM_FRAMES = None                                # optionally limit number of frames
+TASK_NAME = "demo_task"
+NUM_FRAMES = None  # optionally limit number of frames
 
 # ----------------------------
 # LOAD DATA
@@ -138,7 +138,7 @@ NUM_FRAMES = None                                # optionally limit number of fr
 print("Loading PKL data...")
 
 with open(DATA_FOLDER / "states.pkl", "rb") as f:
-    arm_states = pickle.load(f)  # list of dicts: {'state': [x7,...], 'timestamp': t}
+    arm_states = pickle.load(f)
 
 with open(DATA_FOLDER / "commanded_states.pkl", "rb") as f:
     arm_commanded_states = pickle.load(f)
@@ -155,43 +155,94 @@ print(f"Number of hand_states: {len(hand_states)}")
 print(f"Number of commanded hand_states: {len(hand_commanded_states)}")
 
 # ----------------------------
-# SYNCHRONIZE DATA (arm timestamps as reference)
+# SYNCHRONIZE DATA (hand timestamps as reference)
 # ----------------------------
-print("Synchronizing data (arm frames as reference)...")
+print("Synchronizing data...")
 observations = []
-timestamps = []  # store timestamps for all synchronized frames
+timestamps = []
 
-# Extract timestamps
-arm_times = np.array([s["timestamp"] for s in arm_commanded_states])  # use commanded arm timestamps
+arm_times = np.array([s["timestamp"] for s in arm_states])
 hand_times = np.array([s["timestamp"] for s in hand_states])
 
-skipped = 0
-
-# Loop over commanded arm frames
-for i, t in enumerate(tqdm(arm_times if NUM_FRAMES is None else arm_times[:NUM_FRAMES])):
-    # Find closest hand frame to this arm timestamp
-    hand_idx = np.argmin(np.abs(hand_times - t))
-    time_diff = abs(hand_times[hand_idx] - t)
+# Loop over hand frames
+for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM_FRAMES])):
+    # Find closest arm frame
+    arm_idx = np.argmin(np.abs(arm_times - t))
+    time_diff = abs(arm_times[arm_idx] - t)
+    if time_diff > 0.05:
+        continue
 
     obs = {}
-    obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)  # dummy image
-    obs["timestamp"] = float(t)  # use arm timestamp
+    obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)
+    obs["timestamp"] = float(t)
 
-    # Extract Franka joint positions
-    arm_state = arm_states[i]['state']
-    commanded_arm_state = arm_commanded_states[i]['state']
+    arm_state = arm_states[arm_idx]['state']
+    commanded_arm_state = arm_commanded_states[arm_idx]['state']
 
     obs["cartesian_states"] = np.concatenate([arm_state.pos, arm_state.quat]).astype(np.float32)
     obs["commanded_cartesian_states"] = np.concatenate([commanded_arm_state.pos, commanded_arm_state.quat]).astype(np.float32)
 
-    # Hand/gripper states from closest hand frame
-    obs["gripper_states"] = np.array(hand_states[hand_idx]["state"], dtype=np.float32)
-    obs["commanded_gripper_states"] = np.array(hand_commanded_states[hand_idx]["state"], dtype=np.float32)
+    obs["gripper_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
+    obs["commanded_gripper_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
 
     observations.append(obs)
     timestamps.append(float(t))
 
-print(f"Skipped {skipped} arm frames due to timestamp mismatch")
+# ----------------------------
+# INTERPOLATE FRAMES
+# ----------------------------
+print("Interpolating frames...")
+
+interpolated_obs = []
+interpolated_timestamps = []
+
+for i in range(len(observations)-1):
+    obs1 = observations[i]
+    obs2 = observations[i+1]
+
+    # Append original frame
+    interpolated_obs.append(obs1)
+    interpolated_timestamps.append(timestamps[i])
+
+    # Interpolated frame
+    interp_obs = {}
+    interp_obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)
+    interp_obs["timestamp"] = (timestamps[i] + timestamps[i+1]) / 2.0
+
+    # Interpolate cartesian states (linear for pos, SLERP for quat)
+    pos1, quat1 = obs1["cartesian_states"][:3], obs1["cartesian_states"][3:]
+    pos2, quat2 = obs2["cartesian_states"][:3], obs2["cartesian_states"][3:]
+
+    interp_obs["cartesian_states"] = np.zeros(7, dtype=np.float32)
+    interp_obs["cartesian_states"][:3] = (pos1 + pos2) / 2.0
+
+    r = R.from_quat([quat1, quat2])
+    slerp = Slerp([0, 1], r)
+    interp_obs["cartesian_states"][3:] = slerp(0.5).as_quat()
+
+    # Commanded cartesian states
+    pos1c, quat1c = obs1["commanded_cartesian_states"][:3], obs1["commanded_cartesian_states"][3:]
+    pos2c, quat2c = obs2["commanded_cartesian_states"][:3], obs2["commanded_cartesian_states"][3:]
+
+    interp_obs["commanded_cartesian_states"] = np.zeros(7, dtype=np.float32)
+    interp_obs["commanded_cartesian_states"][:3] = (pos1c + pos2c) / 2.0
+    r = R.from_quat([quat1c, quat2c])
+    slerp = Slerp([0,1], r)
+    interp_obs["commanded_cartesian_states"][3:] = slerp(0.5).as_quat()
+
+    # Interpolate gripper states
+    interp_obs["gripper_states"] = (obs1["gripper_states"] + obs2["gripper_states"]) / 2.0
+    interp_obs["commanded_gripper_states"] = (obs1["commanded_gripper_states"] + obs2["commanded_gripper_states"]) / 2.0
+
+    interpolated_obs.append(interp_obs)
+    interpolated_timestamps.append(interp_obs["timestamp"])
+
+# Append the last original frame
+interpolated_obs.append(observations[-1])
+interpolated_timestamps.append(timestamps[-1])
+
+observations = interpolated_obs
+timestamps = interpolated_timestamps
 
 # ----------------------------
 # COMPUTE MIN/MAX BOUNDS
@@ -210,7 +261,6 @@ min_gripper = np.min(hand_stack, axis=0)
 # ----------------------------
 # TASK EMBEDDING (dummy)
 # ----------------------------
-# If you want a real embedding, you can use sentence-transformers
 task_emb = np.zeros(256, dtype=np.float32)
 
 # ----------------------------
