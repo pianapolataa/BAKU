@@ -1,0 +1,9 @@
+defaults:
+  - _self_
+
+bc_dataset:
+  _target_: 'custom.bc_dataset'
+  demo_folder: '/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/proc_data'
+shuffle: true
+batch_size: 64
+num_workers: 4

@@ -1,12 +1,12 @@
 defaults:
   - _self_
   - agent: baku
-  - suite: libero
-  - dataloader: libero
+  - suite: custom
+  - dataloader: custom
   - override hydra/launcher: submitit_local
 
 # Root Dir
-root_dir: /path/to/repo/BAKU
+root_dir: /home_shared/grail_sissi/BAKU
 
 # misc
 seed: 2
@@ -23,7 +23,7 @@ encoder_type: 'resnet' # base, resnet
 policy_type: 'gpt' # mlp, gpt
 policy_head: deterministic # deterministic, gmm, bet, diffusion, vqbet
 use_proprio: true
-use_language: true
+use_language: false
 use_actions: false
 prompt: text # text, goal, intermediate_goal
 eval: false
