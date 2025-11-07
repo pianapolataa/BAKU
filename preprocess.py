@@ -56,6 +56,11 @@ for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM
 
     # Find closest arm frame to this hand timestamp
     arm_idx = np.argmin(np.abs(arm_times - t))
+    time_diff = abs(arm_times[arm_idx] - t)
+
+    # Skip if timestamps differ by more than 0.05s
+    if time_diff > 0.05:
+        continue
 
     # Extract Franka joint positions
     arm_state = arm_states[arm_idx]['state']
