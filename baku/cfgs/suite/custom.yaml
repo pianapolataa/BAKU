@@ -13,6 +13,6 @@ num_eval_episodes: 1
 
 # Task creation function
 task_make_fn:
-  _target_: flexible_custom_suite.CustomSuite
+  _target_: suite.custom.CustomSuite
   dataset: ${dataloader.dataset}
   env_cls: flexible_custom_suite.DummyEnv
