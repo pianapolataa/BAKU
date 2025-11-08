@@ -68,6 +68,7 @@ class CustomTeleopBCDataset(IterableDataset):
         actions = self.preprocess["actions"](actions)
 
         return {
+            "pixels0": np.zeros((84, 84, 3), dtype=np.uint8),  # dummy
             "features": features.astype(np.float32),
             "actions": actions.astype(np.float32),
             "task_emb": self.task_emb.astype(np.float32),
