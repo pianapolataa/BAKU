@@ -9,7 +9,7 @@ history_len: 1
 eval_history_len: 1
 
 pixel_keys: ["pixels0"]               
-proprio_key: "features"   
+proprio_key: "proprioceptive"   
 feature_key: "features"     
 action_repeat: 1              
 num_eval_episodes: 1
