@@ -4,6 +4,7 @@ _target_: suite.custom.CustomSuite
 dataset: ${dataloader}
 env_cls: flexible_custom_suite.DummyEnv
 hidden_dim: ${suite_hidden_dim}
+name: custom
 task_make_fn:
   _target_: suite.custom.task_make_fn
   max_episode_len: 1000
