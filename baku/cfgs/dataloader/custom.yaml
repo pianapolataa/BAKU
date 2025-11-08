@@ -1,2 +1,2 @@
-_target_: flexible_custom_dataloader.CustomTeleopBCDataset
+_target_: custom.CustomTeleopBCDataset
 pkl_file: /home_shared/grail_sissi/processed_data_pkl/demo_task.pkl
