@@ -18,7 +18,7 @@ batch_size: 64
 suite_hidden_dim: 256
 
 # experiment
-obs_type: "features" # pixels, features
+obs_type: "pixels" # pixels, features
 num_demos_per_task: 1
 encoder_type: 'resnet' # base, resnet
 policy_type: 'gpt' # mlp, gpt
