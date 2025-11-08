@@ -32,6 +32,15 @@ class CustomTeleopBCDataset(IterableDataset):
 
         self._num_samples = len(self.observations)
 
+        # create actions array (raw, before preprocess) so agent.discretize can use it
+        self.actions = np.stack(
+            [
+                np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]])
+                for obs in self.observations
+            ],
+            axis=0,
+        ).astype(np.float32)
+
         # action normalization using PKL min/max
         self.stats = {
             "actions": {

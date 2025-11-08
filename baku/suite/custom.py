@@ -1,5 +1,7 @@
-import numpy as np
 from dataclasses import dataclass, field
+import numpy as np
+import hydra
+from omegaconf import DictConfig
 
 # Minimal dummy environment for testing with preprocessed data
 class DummyEnv:
@@ -37,14 +39,26 @@ class DummyTimeStep:
 def make_custom_task(dataset, env_cls=DummyEnv, **env_kwargs):
     """
     Returns a list of envs and task descriptions.
-    env_cls: either DummyEnv (for dry run) or your real Franka+RUKA env
+    env_cls: either DummyEnv (for dry run) or your real env
     env_kwargs: parameters to pass to env_cls constructor
     """
+    # If dataset is a config, instantiate it
+    if isinstance(dataset, (dict, DictConfig)):
+        dataset = hydra.utils.call(dataset)
+
     envs = [env_cls(dataset._max_state_dim, dataset._max_action_dim, dataset._max_episode_len, **env_kwargs)]
     task_descriptions = [dataset.task_emb]
     return envs, task_descriptions
 
-def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=50, **env_kwargs):
+def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=50, max_action_dim=None, **env_kwargs):
+    # If dataset is a config, instantiate it
+    if isinstance(dataset, (dict, DictConfig)):
+        dataset = hydra.utils.call(dataset)
+
+    # Do not forward unrelated keys to env constructor
+    env_kwargs = dict(env_kwargs)
+    env_kwargs.pop("max_action_dim", None)
+
     envs = [
         env_cls(
             dataset._max_state_dim,
@@ -70,6 +84,3 @@ class CustomSuite:
     
     # Add task_make_fn so OmegaConf can see it
     task_make_fn: any = field(default_factory=lambda: None)
-    
-    # store extra kwargs for env
-    env_kwargs: dict = field(default_factory=dict)
