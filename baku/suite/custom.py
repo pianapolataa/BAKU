@@ -2,6 +2,7 @@ from dataclasses import dataclass, field
 import numpy as np
 import hydra
 from omegaconf import DictConfig
+from dm_env import specs
 
 class ObsArray:
     def __init__(self, shape, dtype):
@@ -19,18 +20,30 @@ class DummyEnv:
     
     def observation_spec(self):
         return {
-            "pixels0": ObsArray(self._image_shape, np.uint8),
-            "features": ObsArray((self._state_dim,), np.float32),
+            "pixels0": specs.BoundedArray(
+                shape=self._image_shape, dtype=np.uint8, minimum=0, maximum=255, name="pixels0"
+            ),
+            "features": specs.Array(
+                shape=(self._state_dim,), dtype=np.float32, name="features"
+            ),
         }
 
     def action_spec(self):
-        return np.zeros((self._action_dim,), dtype=np.float32)
+        return specs.BoundedArray(
+            shape=(self._action_dim,),
+            dtype=np.float32,
+            minimum=-np.inf,
+            maximum=np.inf,
+            name="action",
+        )
 
     def reset(self):
         self.current_step = 0
         return {
             "pixels0": np.zeros(self._image_shape, dtype=np.uint8),
             "features": np.zeros((self._state_dim,), dtype=np.float32),
+            "task_emb": np.zeros(256, dtype=np.float32),  # match whatever your embedding size is
+            "goal_achieved": False,
         }
 
     def step(self, action):
@@ -45,6 +58,7 @@ class DummyTimeStep:
         self.observation = {
             "pixels0": np.zeros(image_shape, dtype=np.uint8),
             "features": np.zeros((state_dim,), dtype=np.float32),
+            "task_emb": np.zeros(256, dtype=np.float32),
             "goal_achieved": False,
         }
 
