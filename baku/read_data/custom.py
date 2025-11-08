@@ -68,6 +68,13 @@ class CustomTeleopBCDataset(IterableDataset):
         )
         actions = self.preprocess["actions"](actions)
 
+        # pad action vector to dataset max action dim so flattened size matches agent
+        d = actions.shape[0]
+        if d < self.__max_action_dim:
+            padded = np.zeros((self.__max_action_dim,), dtype=actions.dtype)
+            padded[:d] = actions
+            actions = padded
+
         # replicate along the action-time axis if agent expects repeated actions
         if self.action_repeat > 1:
             # tile into shape (t2, D) then add batch/time dims -> (1, t2, D)
