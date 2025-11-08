@@ -1,9 +1,7 @@
-suite_hidden_dim: 256
-
 _target_: suite.custom.CustomSuite
 dataset: ${dataloader}
 env_cls: flexible_custom_suite.DummyEnv
-hidden_dim: ${suite_hidden_dim}
+hidden_dim: 256
 name: custom
 
 pixel_keys: []               
