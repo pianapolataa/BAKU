@@ -44,6 +44,28 @@ def make_custom_task(dataset, env_cls=DummyEnv, **env_kwargs):
     task_descriptions = [dataset.task_emb]
     return envs, task_descriptions
 
+# Flexible task maker that can store dynamic attributes
+class TaskMaker:
+    def __init__(self, dataset, env_cls=DummyEnv, **env_kwargs):
+        self.dataset = dataset
+        self.env_cls = env_cls
+        self.env_kwargs = env_kwargs
+        # placeholders that train.py will set dynamically
+        self.max_episode_len = None
+        self.max_state_dim = None
+
+    def __call__(self):
+        envs = [
+            self.env_cls(
+                self.dataset._max_state_dim,
+                self.dataset._max_action_dim,
+                self.dataset._max_episode_len,
+                **self.env_kwargs,
+            )
+        ]
+        task_descriptions = [self.dataset.task_emb]
+        return envs, task_descriptions
+
 # Flexible CustomSuite
 class CustomSuite:
     def __init__(self, dataset, env_cls=DummyEnv, **env_kwargs):
@@ -64,4 +86,4 @@ class CustomSuite:
         self.num_eval_episodes = 1
 
         # expose task_make_fn to train.py
-        self.task_make_fn = lambda: make_custom_task(self.dataset, self.env_cls, **self.env_kwargs)
+        self.task_make_fn = TaskMaker(self.dataset, self.env_cls, **self.env_kwargs)
