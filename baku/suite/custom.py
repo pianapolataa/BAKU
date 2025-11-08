@@ -24,18 +24,18 @@ class DummyEnv:
 
     def reset(self):
         self.current_step = 0
-        return self.observation_spec()
+        return {"features": np.zeros((self._state_dim,), dtype=np.float32)}
 
     def step(self, action):
         self.current_step += 1
         done = self.current_step >= self._max_episode_len
-        return DummyTimeStep(done)
+        return DummyTimeStep(done, self._state_dim)
 
 class DummyTimeStep:
-    def __init__(self, done):
+    def __init__(self, done, state_dim):
         self.last_flag = done
         self.reward = 0.0
-        self.observation = {"features": np.zeros(1, dtype=np.float32), "goal_achieved": 0}
+        self.observation = {"features": np.zeros((state_dim,), dtype=np.float32)}
 
     def last(self):
         return self.last_flag
