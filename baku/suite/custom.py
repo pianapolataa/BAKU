@@ -12,10 +12,15 @@ class DummyEnv:
         self.current_step = 0
 
     def observation_spec(self):
-        return {"features": np.zeros(self._state_dim, dtype=np.float32)}
+        # return dict mapping keys -> objects with .shape (numpy arrays work)
+        # ensure matches cfg.suite.proprio_key and cfg.suite.feature_key
+        return {
+            "features": np.zeros((self._state_dim,), dtype=np.float32),
+        }
 
     def action_spec(self):
-        return np.zeros(self._action_dim, dtype=np.float32)
+        # return an object with .shape
+        return np.zeros((self._action_dim,), dtype=np.float32)
 
     def reset(self):
         self.current_step = 0
