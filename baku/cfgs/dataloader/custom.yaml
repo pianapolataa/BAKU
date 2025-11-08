@@ -2,4 +2,4 @@ _bc_dataset_:
   _target_: flexible_custom_dataloader.CustomTeleopBCDataset
   pkl_file: /home_shared/grail_sissi/processed_data_pkl/demo_task.pkl
 
-dataset: ${_bc_dataset_}
+dataset: ${bc_dataset}
