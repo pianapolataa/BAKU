@@ -44,26 +44,17 @@ def make_custom_task(dataset, env_cls=DummyEnv, **env_kwargs):
     task_descriptions = [dataset.task_emb]
     return envs, task_descriptions
 
-# Flexible task maker that can store dynamic attributes
-@dataclass
-class TaskMaker:
-    dataset: object
-    env_cls: object = DummyEnv
-    env_kwargs: dict = field(default_factory=dict)
-    max_episode_len: int = 1000  # default for Hydra
-    max_state_dim: int = 50      # default for Hydra
-
-    def __call__(self):
-        envs = [
-            self.env_cls(
-                self.dataset._max_state_dim,
-                self.dataset._max_action_dim,
-                self.max_episode_len,
-                **self.env_kwargs,
-            )
-        ]
-        task_descriptions = [self.dataset.task_emb]
-        return envs, task_descriptions
+def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=50, **env_kwargs):
+    envs = [
+        env_cls(
+            dataset._max_state_dim,
+            dataset._max_action_dim,
+            max_episode_len,
+            **env_kwargs,
+        )
+    ]
+    task_descriptions = [dataset.task_emb]
+    return envs, task_descriptions
 
 # Flexible CustomSuite
 class CustomSuite:
@@ -85,4 +76,4 @@ class CustomSuite:
         self.num_eval_episodes = 1
 
         # expose task_make_fn to train.py
-        self.task_make_fn = TaskMaker(self.dataset, self.env_cls, **self.env_kwargs)
+        self.task_make_fn = lambda: task_make_fn(self.dataset, self.env_cls, **self.env_kwargs)
