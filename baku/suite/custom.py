@@ -1,5 +1,5 @@
-# flexible_custom_suite.py
 import numpy as np
+from dataclasses import dataclass, field
 
 # Minimal dummy environment for testing with preprocessed data
 class DummyEnv:
@@ -45,22 +45,20 @@ def make_custom_task(dataset, env_cls=DummyEnv, **env_kwargs):
     return envs, task_descriptions
 
 # Flexible task maker that can store dynamic attributes
+@dataclass
 class TaskMaker:
-    def __init__(self, dataset, env_cls=DummyEnv, **env_kwargs):
-        self.dataset = dataset
-        self.env_cls = env_cls
-        self.env_kwargs = env_kwargs
-
-        # Add these defaults so OmegaConf can set them
-        self.max_episode_len = 0
-        self.max_state_dim = 0
+    dataset: object
+    env_cls: object = DummyEnv
+    env_kwargs: dict = field(default_factory=dict)
+    max_episode_len: int = 1000  # default for Hydra
+    max_state_dim: int = 50      # default for Hydra
 
     def __call__(self):
         envs = [
             self.env_cls(
                 self.dataset._max_state_dim,
                 self.dataset._max_action_dim,
-                self.dataset._max_episode_len,
+                self.max_episode_len,
                 **self.env_kwargs,
             )
         ]
