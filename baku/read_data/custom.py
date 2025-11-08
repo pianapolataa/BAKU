@@ -13,8 +13,9 @@ class CustomTeleopBCDataset(IterableDataset):
       - 'task_emb' : task embedding vector
     """
 
-    def __init__(self, pkl_file):
+    def __init__(self, pkl_file, action_repeat: int = 1):
         self.pkl_file = pkl_file
+        self.action_repeat = int(action_repeat)
         with open(pkl_file, "rb") as f:
             data = pickle.load(f)
 
@@ -67,13 +68,20 @@ class CustomTeleopBCDataset(IterableDataset):
         )
         actions = self.preprocess["actions"](actions)
 
+        # replicate along the action-time axis if agent expects repeated actions
+        if self.action_repeat > 1:
+            # tile into shape (t2, D) then add batch/time dims -> (1, t2, D)
+            tiled = np.tile(actions.reshape(1, -1), (self.action_repeat, 1))
+            actions_out = tiled.reshape(1, self.action_repeat, -1).astype(np.float32)
+        else:
+            actions_out = actions.reshape(1, 1, -1).astype(np.float32)
+
         return {
             # "pixels0": np.zeros((1, 84, 84, 3), dtype=np.float32), 
             # "features": features.astype(np.float32),
             "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),
             "features": features.reshape(1, -1).astype(np.float32),  # t=1
-            # "actions": actions.astype(np.float32),
-            "actions": actions.reshape(1, 1, -1).astype(np.float32),
+            "actions": actions_out,
             "task_emb": self.task_emb.astype(np.float32),
         }
 
