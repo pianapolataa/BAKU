@@ -4,6 +4,10 @@ env_cls: flexible_custom_suite.DummyEnv
 hidden_dim: 256
 name: custom
 
+history: false
+history_len: 1
+eval_history_len: 1
+
 pixel_keys: []               
 proprio_key: "features"   
 feature_key: "features"     
