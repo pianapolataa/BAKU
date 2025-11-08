@@ -5,6 +5,14 @@ dataset: ${dataloader}
 env_cls: flexible_custom_suite.DummyEnv
 hidden_dim: ${suite_hidden_dim}
 name: custom
+
+pixel_keys: []               
+proprio_key: "features"   
+feature_key: "features"     
+action_repeat: 1              
+num_eval_episodes: 1
+discount: 0.99
+
 task_make_fn:
   _target_: suite.custom.task_make_fn
   dataset: ${dataloader}
