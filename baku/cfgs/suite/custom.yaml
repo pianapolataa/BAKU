@@ -1,5 +1,7 @@
+suite_hidden_dim: 256
+
 suite:
   _target_: suite.custom.CustomSuite
   dataset: ${dataloader}
   env_cls: flexible_custom_suite.DummyEnv
-  hidden_dim: 256
+  hidden_dim: ${suite_hidden_dim}
