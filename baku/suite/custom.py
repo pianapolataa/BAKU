@@ -11,7 +11,7 @@ class ObsArray:
 
 # Minimal dummy environment for testing with preprocessed data
 class DummyEnv:
-    def __init__(self, state_dim, action_dim, max_episode_len, image_shape=(84, 84, 3), **kwargs):
+    def __init__(self, state_dim, action_dim, max_episode_len, image_shape=(3, 84, 84), **kwargs):
         self._state_dim = state_dim
         self._action_dim = action_dim
         self._max_episode_len = max_episode_len
