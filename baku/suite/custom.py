@@ -29,14 +29,15 @@ class DummyEnv:
         self.current_step = 0
 
     def observation_spec(self):
-        # dataset yields pixels with a leading time dim: (1, C, H, W)
-        # and features shaped (history_len, state_dim)
+        # ResnetEncoder expects images shaped (C, H, W).
+        # Keep pixels0 as (C, H, W) to match agent/network expectations.
+        # features still include history dimension if used by the dataset.
         return {
             "pixels0": specs.BoundedArray(
-                shape=(1, self._image_shape[0], self._image_shape[1], self._image_shape[2]),
-                dtype=np.float32,
-                minimum=0.0,
-                maximum=1.0,
+                shape=(self._image_shape[0], self._image_shape[1], self._image_shape[2]),
+                dtype=np.uint8,
+                minimum=0,
+                maximum=255,
                 name="pixels0",
             ),
             "features": specs.Array(
@@ -68,9 +69,9 @@ class DummyTimeStep:
     def __init__(self, done, state_dim, image_shape, history_len=1):
         self.last_flag = bool(done)
         self.reward = 0.0
-        # match observation_spec shapes and dtypes
+        # pixels shaped (C, H, W) to match observation_spec and agent expectation
         self.observation = {
-            "pixels0": np.zeros((1, image_shape[0], image_shape[1], image_shape[2]), dtype=np.float32),
+            "pixels0": np.zeros((image_shape[0], image_shape[1], image_shape[2]), dtype=np.uint8),
             "features": np.zeros((history_len, state_dim), dtype=np.float32),
             "task_emb": np.zeros(256, dtype=np.float32),
             "goal_achieved": False,
