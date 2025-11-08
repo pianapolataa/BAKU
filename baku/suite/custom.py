@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 
 # Minimal dummy environment for testing with preprocessed data
 class DummyEnv:
-    def __init__(self, state_dim, action_dim, max_episode_len):
+    def __init__(self, state_dim, action_dim, max_episode_len, max_action_dim=None, **kwargs):
         self._state_dim = state_dim
         self._action_dim = action_dim
         self._max_episode_len = max_episode_len
@@ -73,15 +73,3 @@ class CustomSuite:
     
     # store extra kwargs for env
     env_kwargs: dict = field(default_factory=dict)
-    
-    # Optional: initialize the task_make_fn after construction
-    def __post_init__(self):
-        if self.task_make_fn is None:
-            from flexible_custom_suite import task_make_fn  # import your existing function
-            self.task_make_fn = lambda: task_make_fn(
-                self.dataset,
-                self.env_cls,
-                max_episode_len=1000,
-                max_state_dim=50,
-                **self.env_kwargs
-            )
