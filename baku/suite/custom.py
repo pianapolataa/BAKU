@@ -50,9 +50,10 @@ class TaskMaker:
         self.dataset = dataset
         self.env_cls = env_cls
         self.env_kwargs = env_kwargs
-        # placeholders that train.py will set dynamically
-        self.max_episode_len = None
-        self.max_state_dim = None
+
+        # Add these defaults so OmegaConf can set them
+        self.max_episode_len = 0
+        self.max_state_dim = 0
 
     def __call__(self):
         envs = [
