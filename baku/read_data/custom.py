@@ -19,7 +19,7 @@ class CustomTeleopBCDataset(IterableDataset):
             data = pickle.load(f)
 
         self.observations = data["observations"]
-        self.task_emb = data["task_emb"]
+        self.task_emb = np.asarray(data["task_emb"], dtype=np.float32)
 
         # compute max state/action dimensions for BAKU
         self.__max_state_dim = max(

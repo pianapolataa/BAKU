@@ -51,23 +51,19 @@ def make_custom_task(dataset, env_cls=DummyEnv, **env_kwargs):
     return envs, task_descriptions
 
 def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=50, max_action_dim=None, **env_kwargs):
-    # If dataset is a config, instantiate it
     if isinstance(dataset, (dict, DictConfig)):
         dataset = hydra.utils.call(dataset)
 
-    # Do not forward unrelated keys to env constructor
+    # don't forward config-only keys to env constructor
     env_kwargs = dict(env_kwargs)
     env_kwargs.pop("max_action_dim", None)
 
-    envs = [
-        env_cls(
-            dataset._max_state_dim,
-            dataset._max_action_dim,
-            max_episode_len,
-            **env_kwargs,
-        )
-    ]
-    task_descriptions = [dataset.task_emb]
+    state_dim = getattr(dataset, "_max_state_dim", max_state_dim)
+    action_dim = getattr(dataset, "_max_action_dim", None)
+    episode_len = getattr(dataset, "_max_episode_len", max_episode_len)
+
+    envs = [env_cls(state_dim, action_dim, episode_len, **env_kwargs)]
+    task_descriptions = [getattr(dataset, "task_emb", None)]
     return envs, task_descriptions
 
 @dataclass
