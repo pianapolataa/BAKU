@@ -56,21 +56,32 @@ def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=
     task_descriptions = [dataset.task_emb]
     return envs, task_descriptions
 
-# Flexible CustomSuite
+@dataclass
 class CustomSuite:
-    def __init__(self, dataset, env_cls=DummyEnv, **env_kwargs):
-        self.name = "custom"
-        self.dataset = dataset
-        self.env_cls = env_cls
-        self.env_kwargs = env_kwargs
-
-        # keys expected by train.py
-        self.pixel_keys = []          # set ["pixels0"] if using camera
-        self.proprio_key = "features"
-        self.feature_key = "features"
-
-        # training hyperparams
-        self.action_repeat = 1
-        self.discount = 0.99
-        self.hidden_dim = 256
-        self.num_eval_episodes = 1
+    dataset: any
+    env_cls: type = DummyEnv
+    hidden_dim: int = 256
+    action_repeat: int = 1
+    discount: float = 0.99
+    num_eval_episodes: int = 1
+    pixel_keys: list = field(default_factory=list)
+    proprio_key: str = "features"
+    feature_key: str = "features"
+    
+    # Add task_make_fn so OmegaConf can see it
+    task_make_fn: any = field(default_factory=lambda: None)
+    
+    # store extra kwargs for env
+    env_kwargs: dict = field(default_factory=dict)
+    
+    # Optional: initialize the task_make_fn after construction
+    def __post_init__(self):
+        if self.task_make_fn is None:
+            from flexible_custom_suite import task_make_fn  # import your existing function
+            self.task_make_fn = lambda: task_make_fn(
+                self.dataset,
+                self.env_cls,
+                max_episode_len=1000,
+                max_state_dim=50,
+                **self.env_kwargs
+            )
