@@ -5,3 +5,8 @@ suite:
   dataset: ${dataloader}
   env_cls: flexible_custom_suite.DummyEnv
   hidden_dim: ${suite_hidden_dim}
+  task_make_fn:
+    _target_: suite.custom.task_make_fn
+    max_episode_len: 1000
+    max_state_dim: 50
+    max_action_dim: 10
