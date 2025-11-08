@@ -1,2 +1,2 @@
 _target_: read_data.custom.CustomTeleopBCDataset
-pkl_file: /home_shared/grail_sissi/processed_data_pkl/demo_task.pkl
+pkl_file: /home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl
