@@ -74,12 +74,3 @@ class CustomSuite:
         self.discount = 0.99
         self.hidden_dim = 256
         self.num_eval_episodes = 1
-
-        # expose task_make_fn to train.py
-
-        def task_make_fn_wrapper():
-            return task_make_fn(self.dataset, self.env_cls, **self.env_kwargs)
-        self.task_make_fn = task_make_fn_wrapper
-        self.task_make_fn.max_episode_len = 1000
-        self.task_make_fn.max_state_dim = self.dataset._max_state_dim
-        self.task_make_fn.max_action_dim = self.dataset._max_action_dim
