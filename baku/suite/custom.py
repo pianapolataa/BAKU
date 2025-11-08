@@ -11,12 +11,19 @@ class ObsArray:
 
 # Minimal dummy environment for testing with preprocessed data
 class DummyEnv:
-    def __init__(self, state_dim, action_dim, max_episode_len, image_shape=(3, 84, 84), **kwargs):
+    def __init__(self, state_dim, action_dim, max_episode_len, image_shape=(3, 84, 84), action_low=None, action_high=None, **kwargs):
         self._state_dim = state_dim
         self._action_dim = action_dim
         self._max_episode_len = max_episode_len
         self._image_shape = tuple(image_shape)
         self.current_step = 0
+
+        if action_low is not None and action_high is not None:
+            self._action_low = np.array(action_low, dtype=np.float32)
+            self._action_high = np.array(action_high, dtype=np.float32)
+        else:
+            self._action_low = -np.inf * np.ones((self._action_dim,), dtype=np.float32)
+            self._action_high = np.inf * np.ones((self._action_dim,), dtype=np.float32)
     
     def observation_spec(self):
         return {
@@ -32,8 +39,8 @@ class DummyEnv:
         return specs.BoundedArray(
             shape=(self._action_dim,),
             dtype=np.float32,
-            minimum=-np.inf,
-            maximum=np.inf,
+            minimum=self._action_low,
+            maximum=self._action_high,
             name="action",
         )
 
@@ -42,7 +49,7 @@ class DummyEnv:
         return {
             "pixels0": np.zeros(self._image_shape, dtype=np.uint8),
             "features": np.zeros((self._state_dim,), dtype=np.float32),
-            "task_emb": np.zeros(256, dtype=np.float32),  # match whatever your embedding size is
+            "task_emb": np.zeros(256, dtype=np.float32), 
             "goal_achieved": False,
         }
 
@@ -89,10 +96,17 @@ def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=
     env_kwargs.pop("max_action_dim", None)
 
     state_dim = getattr(dataset, "_max_state_dim", max_state_dim)
-    action_dim = getattr(dataset, "_max_action_dim", None)
+    action_dim = 23
     episode_len = getattr(dataset, "_max_episode_len", max_episode_len)
 
-    envs = [env_cls(state_dim, action_dim, episode_len, **env_kwargs)]
+    min_arm, max_arm = dataset.min_arm, dataset.max_arm
+    min_ruka, max_ruka = dataset.min_ruka, dataset.max_ruka
+    assert len(dataset.min_arm) + len(dataset.min_ruka) == 23, \
+    f"Expected 23-dim action, got {len(dataset.min_arm) + len(dataset.min_ruka)}"
+    action_low = np.concatenate([min_arm, min_ruka]).astype(np.float32)
+    action_high = np.concatenate([max_arm, max_ruka]).astype(np.float32)
+
+    envs = [env_cls(state_dim, action_dim, episode_len, action_low=action_low, action_high=action_high, **env_kwargs)]    
     task_descriptions = [getattr(dataset, "task_emb", None)]
     return envs, task_descriptions
 
