@@ -3,6 +3,11 @@ import numpy as np
 import hydra
 from omegaconf import DictConfig
 
+class ObsArray:
+    def __init__(self, shape, dtype):
+        self.shape = shape
+        self.dtype = dtype
+
 # Minimal dummy environment for testing with preprocessed data
 class DummyEnv:
     def __init__(self, state_dim, action_dim, max_episode_len, image_shape=(84, 84, 3), **kwargs):
@@ -11,12 +16,11 @@ class DummyEnv:
         self._max_episode_len = max_episode_len
         self._image_shape = image_shape
         self.current_step = 0
-
+    
     def observation_spec(self):
-        # Observation now includes both pixels and features
         return {
-            "pixels0": np.zeros(self._image_shape, dtype=np.uint8),
-            "features": np.zeros((self._state_dim,), dtype=np.float32),
+            "pixels0": ObsArray(self._image_shape, np.uint8),
+            "features": ObsArray((self._state_dim,), np.float32),
         }
 
     def action_spec(self):
