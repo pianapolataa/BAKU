@@ -68,8 +68,8 @@ class WorkspaceIL:
         self.env, self.task_descriptions = hydra.utils.call(self.cfg.suite.task_make_fn)
 
         ##
-        print("DEBUG: obs_spec keys:", self.train_envs[0].observation_spec().keys())
-        for k, v in self.train_envs[0].observation_spec().items():
+        print("DEBUG: obs_spec keys:", self.env[0].observation_spec().keys())
+        for k, v in self.env[0].observation_spec().items():
             print("DEBUG:", k, type(v), getattr(v, "shape", None))
         ##
 
