@@ -8,7 +8,7 @@ history: false
 history_len: 1
 eval_history_len: 1
 
-pixel_keys: ["pixels0"]               
+pixel_keys: []               
 proprio_key: "proprioceptive"   
 feature_key: "features"     
 action_repeat: 1              
