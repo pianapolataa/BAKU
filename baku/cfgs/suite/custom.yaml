@@ -1,0 +1,18 @@
+_custom_:
+  name: custom
+
+# Suite-specific hyperparameters
+pixel_keys: []           # empty for now since camera is off
+proprio_key: "features"
+feature_key: "features"
+
+action_repeat: 1
+discount: 0.99
+hidden_dim: 256
+num_eval_episodes: 1
+
+# Task creation function
+task_make_fn:
+  _target_: flexible_custom_suite.CustomSuite
+  dataset: ${dataloader.dataset}
+  env_cls: flexible_custom_suite.DummyEnv

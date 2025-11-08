@@ -1,8 +1,8 @@
 defaults:
   - _self_
   - agent: baku
-  - suite: libero
-  - dataloader: libero
+  - suite: custom
+  - dataloader: custom
   - override hydra/launcher: submitit_local
 
 # Root Dir
@@ -17,15 +17,15 @@ use_tb: true
 batch_size: 64
 
 # experiment
-obs_type: "pixels" # pixels, features
+obs_type: "features" # pixels, features
 num_demos_per_task: 1
 encoder_type: 'resnet' # base, resnet
 policy_type: 'gpt' # mlp, gpt
 policy_head: deterministic # deterministic, gmm, bet, diffusion, vqbet
 use_proprio: true
-use_language: true
+use_language: false
 use_actions: false
-prompt: text # text, goal, intermediate_goal
+prompt: null # text, goal, intermediate_goal
 eval: false
 experiment: train
 experiment_label: ${policy_head}
@@ -35,7 +35,7 @@ temporal_agg: true # aggregate actions over time
 num_queries: 10
 
 # expert dataset
-expert_dataset: ${dataloader.bc_dataset}
+expert_dataset: ${dataloader.dataset}
 
 # Load weights
 load_bc: false
