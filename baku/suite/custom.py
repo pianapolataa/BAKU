@@ -11,26 +11,43 @@ class ObsArray:
 
 # Minimal dummy environment for testing with preprocessed data
 class DummyEnv:
-    def __init__(self, state_dim, action_dim, max_episode_len, image_shape=(3, 84, 84), **kwargs):
-        self._state_dim = state_dim
-        self._action_dim = action_dim
-        self._max_episode_len = max_episode_len
-        self._image_shape = image_shape
+    def __init__(
+        self,
+        state_dim,
+        action_dim,
+        max_episode_len,
+        image_shape=(3, 84, 84),
+        history_len=1,
+        **kwargs,
+    ):
+        self._state_dim = int(state_dim)
+        # allow None -> will be resolved by task_make_fn fallback
+        self._action_dim = int(action_dim) if action_dim is not None else None
+        self._max_episode_len = int(max_episode_len)
+        self._image_shape = tuple(image_shape)  # (C, H, W)
+        self._history_len = int(history_len)
         self.current_step = 0
-    
+
     def observation_spec(self):
+        # dataset yields pixels with a leading time dim: (1, C, H, W)
+        # and features shaped (history_len, state_dim)
         return {
             "pixels0": specs.BoundedArray(
-                shape=self._image_shape, dtype=np.uint8, minimum=0, maximum=255, name="pixels0"
+                shape=(1, self._image_shape[0], self._image_shape[1], self._image_shape[2]),
+                dtype=np.float32,
+                minimum=0.0,
+                maximum=1.0,
+                name="pixels0",
             ),
             "features": specs.Array(
-                shape=(self._state_dim,), dtype=np.float32, name="features"
+                shape=(self._history_len, self._state_dim), dtype=np.float32, name="features"
             ),
         }
 
     def action_spec(self):
+        dim = self._action_dim if self._action_dim is not None else ()
         return specs.BoundedArray(
-            shape=(self._action_dim,),
+            shape=(int(self._action_dim),) if self._action_dim is not None else (0,),
             dtype=np.float32,
             minimum=-np.inf,
             maximum=np.inf,
@@ -39,25 +56,22 @@ class DummyEnv:
 
     def reset(self):
         self.current_step = 0
-        return {
-            "pixels0": np.zeros(self._image_shape, dtype=np.uint8),
-            "features": np.zeros((self._state_dim,), dtype=np.float32),
-            "task_emb": np.zeros(256, dtype=np.float32),  # match whatever your embedding size is
-            "goal_achieved": False,
-        }
+        # return a timestep-like object consistent with step()
+        return DummyTimeStep(False, self._state_dim, self._image_shape, self._history_len)
 
     def step(self, action):
         self.current_step += 1
         done = self.current_step >= self._max_episode_len
-        return DummyTimeStep(done, self._state_dim, self._image_shape)
+        return DummyTimeStep(done, self._state_dim, self._image_shape, self._history_len)
 
 class DummyTimeStep:
-    def __init__(self, done, state_dim, image_shape):
-        self.last_flag = done
+    def __init__(self, done, state_dim, image_shape, history_len=1):
+        self.last_flag = bool(done)
         self.reward = 0.0
+        # match observation_spec shapes and dtypes
         self.observation = {
-            "pixels0": np.zeros(image_shape, dtype=np.uint8),
-            "features": np.zeros((state_dim,), dtype=np.float32),
+            "pixels0": np.zeros((1, image_shape[0], image_shape[1], image_shape[2]), dtype=np.float32),
+            "features": np.zeros((history_len, state_dim), dtype=np.float32),
             "task_emb": np.zeros(256, dtype=np.float32),
             "goal_achieved": False,
         }
@@ -76,8 +90,13 @@ def make_custom_task(dataset, env_cls=DummyEnv, **env_kwargs):
     if isinstance(dataset, (dict, DictConfig)):
         dataset = hydra.utils.call(dataset)
 
-    envs = [env_cls(dataset._max_state_dim, dataset._max_action_dim, dataset._max_episode_len, **env_kwargs)]
-    task_descriptions = [dataset.task_emb]
+    state_dim = getattr(dataset, "_max_state_dim", None)
+    action_dim = getattr(dataset, "_max_action_dim", None)
+    episode_len = getattr(dataset, "_max_episode_len", None)
+    task_emb = getattr(dataset, "task_emb", None)
+
+    envs = [env_cls(state_dim, action_dim, episode_len, **env_kwargs)]
+    task_descriptions = [task_emb]
     return envs, task_descriptions
 
 def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=50, max_action_dim=10, **env_kwargs):
@@ -88,9 +107,18 @@ def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=
     env_kwargs = dict(env_kwargs)
     env_kwargs.pop("max_action_dim", None)
 
-    state_dim = getattr(dataset, "_max_state_dim", max_state_dim)
+    state_dim = int(getattr(dataset, "_max_state_dim", max_state_dim))
+    # fallback to config max_action_dim if dataset missing value
     action_dim = getattr(dataset, "_max_action_dim", None)
-    episode_len = getattr(dataset, "_max_episode_len", max_episode_len)
+    if action_dim is None:
+        action_dim = int(max_action_dim)
+    else:
+        action_dim = int(action_dim)
+    episode_len = int(getattr(dataset, "_max_episode_len", max_episode_len))
+    history_len = int(getattr(dataset, "history_len", env_kwargs.get("history_len", 1)))
+
+    # pass history_len into env so observation_spec aligns with dataset
+    env_kwargs["history_len"] = history_len
 
     envs = [env_cls(state_dim, action_dim, episode_len, **env_kwargs)]
     task_descriptions = [getattr(dataset, "task_emb", None)]
@@ -107,6 +135,7 @@ class CustomSuite:
     pixel_keys: list = field(default_factory=list)
     proprio_key: str = "features"
     feature_key: str = "features"
+    history_len: int = 1
     
     # Add task_make_fn so OmegaConf can see it
     task_make_fn: any = field(default_factory=lambda: task_make_fn)
