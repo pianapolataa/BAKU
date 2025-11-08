@@ -5,37 +5,44 @@ from omegaconf import DictConfig
 
 # Minimal dummy environment for testing with preprocessed data
 class DummyEnv:
-    def __init__(self, state_dim, action_dim, max_episode_len, max_action_dim=None, **kwargs):
+    def __init__(self, state_dim, action_dim, max_episode_len, image_shape=(84, 84, 3), **kwargs):
         self._state_dim = state_dim
         self._action_dim = action_dim
         self._max_episode_len = max_episode_len
+        self._image_shape = image_shape
         self.current_step = 0
 
     def observation_spec(self):
-        # return dict mapping keys -> objects with .shape (numpy arrays work)
-        # ensure matches cfg.suite.proprio_key and cfg.suite.feature_key
+        # Observation now includes both pixels and features
         return {
+            "pixels0": np.zeros(self._image_shape, dtype=np.uint8),
             "features": np.zeros((self._state_dim,), dtype=np.float32),
         }
 
     def action_spec(self):
-        # return an object with .shape
         return np.zeros((self._action_dim,), dtype=np.float32)
 
     def reset(self):
         self.current_step = 0
-        return {"features": np.zeros((self._state_dim,), dtype=np.float32)}
+        return {
+            "pixels0": np.zeros(self._image_shape, dtype=np.uint8),
+            "features": np.zeros((self._state_dim,), dtype=np.float32),
+        }
 
     def step(self, action):
         self.current_step += 1
         done = self.current_step >= self._max_episode_len
-        return DummyTimeStep(done, self._state_dim)
+        return DummyTimeStep(done, self._state_dim, self._image_shape)
 
 class DummyTimeStep:
-    def __init__(self, done, state_dim):
+    def __init__(self, done, state_dim, image_shape):
         self.last_flag = done
         self.reward = 0.0
-        self.observation = {"features": np.zeros((state_dim,), dtype=np.float32)}
+        self.observation = {
+            "pixels0": np.zeros(image_shape, dtype=np.uint8),
+            "features": np.zeros((state_dim,), dtype=np.float32),
+            "goal_achieved": False,
+        }
 
     def last(self):
         return self.last_flag
