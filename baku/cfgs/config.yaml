@@ -35,7 +35,7 @@ temporal_agg: true # aggregate actions over time
 num_queries: 10
 
 # expert dataset
-expert_dataset: ${dataloader.dataset}
+expert_dataset: ${dataloader}
 
 # Load weights
 load_bc: false
