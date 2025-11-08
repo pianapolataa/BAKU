@@ -55,7 +55,7 @@ def make_custom_task(dataset, env_cls=DummyEnv, **env_kwargs):
     task_descriptions = [dataset.task_emb]
     return envs, task_descriptions
 
-def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=50, max_action_dim=None, **env_kwargs):
+def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=50, max_action_dim=10, **env_kwargs):
     if isinstance(dataset, (dict, DictConfig)):
         dataset = hydra.utils.call(dataset)
 
@@ -84,4 +84,4 @@ class CustomSuite:
     feature_key: str = "features"
     
     # Add task_make_fn so OmegaConf can see it
-    task_make_fn: any = field(default_factory=lambda: None)
+    task_make_fn: any = field(default_factory=lambda: task_make_fn)
