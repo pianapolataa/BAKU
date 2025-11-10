@@ -54,19 +54,15 @@ def main(cfg: DictConfig):
     # -----------------------------
     total_mse = 0.0
     for step_idx, obs_dict in enumerate(demo_obs):
-        # Build agent observation
+        # Build agent observation as numpy arrays (match training / env outputs)
         agent_obs = {
-            "features": torch.tensor(
-                np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]]),
-                dtype=torch.float32,
-                device=workspace.device
-            ),
-            "pixels0": torch.zeros((84, 84, 3), dtype=torch.float32, device=workspace.device),
-            "task_emb": torch.tensor(demo_data["task_emb"], dtype=torch.float32, device=workspace.device),
+            "features": np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]]).astype(np.float32),
+            "pixels0": np.zeros((84, 84, 3), dtype=np.float32),
+            "task_emb": np.asarray(demo_data["task_emb"], dtype=np.float32),
         }
 
         with torch.no_grad():
-            # Get agent action in raw scale
+            # Get agent action (agent may accept numpy obs)
             agent_action_raw = workspace.agent.act(
                 agent_obs,
                 prompt=None,
@@ -76,11 +72,15 @@ def main(cfg: DictConfig):
                 eval_mode=True,
             )
 
+        # convert agent output to numpy if it's a tensor
+        if isinstance(agent_action_raw, torch.Tensor):
+            agent_action_raw = agent_action_raw.cpu().numpy()
+
         # Build raw demo action (concatenate arm + ruka)
         demo_action_raw = np.concatenate([
             obs_dict["commanded_arm_states"],
             obs_dict["commanded_ruka_states"]
-        ])
+        ]).astype(np.float32)
 
         # Compute MSE on raw actions
         mse = ((agent_action_raw - demo_action_raw) ** 2).mean()
