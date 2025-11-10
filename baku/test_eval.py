@@ -39,13 +39,13 @@ def main(cfg: DictConfig):
 
     # Build normalization stats
     norm_stats = {
-        workspace.agent.proprio_key: {
-            "min": demo_data["min_arm"],
-            "max": demo_data["max_arm"]
+        "features": {
+            "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"]]),
+            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]])
         },
         "actions": {
-            "min": demo_data["min_actions"],
-            "max": demo_data["max_actions"]
+            "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"]]),  # assuming actions match states
+            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]])
         }
     }
 
