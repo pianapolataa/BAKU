@@ -78,7 +78,7 @@ def main(cfg: DictConfig):
             agent_action_raw = agent_action_raw.cpu().numpy()
 
         # print the action
-        print(f"Step {step_idx}: agent_action_raw = {agent_action_raw}")
+        print(f"Step {step_idx}: agent = {agent_action_raw}, demo = {demo_action_raw}")
 
         demo_action_raw = np.concatenate([
             obs_dict["commanded_arm_states"],
