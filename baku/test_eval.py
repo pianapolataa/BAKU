@@ -3,76 +3,77 @@ import pickle
 import torch
 import numpy as np
 from pathlib import Path
-from train import WorkspaceIL, make_agent  # reuse your training code
-from read_data.custom import CustomTeleopBCDataset  # your dataset class
+import hydra
+from omegaconf import DictConfig
+from train import WorkspaceIL  # assumes WorkspaceIL is importable
 
-# --- CONFIG ---
-SNAPSHOT_PATH = Path("exp_local/2025.11.10_train/deterministic/131852/snapshot/500.pt")  # your saved policy
-PKL_FILE = Path("proc_data/default_scene/demo_task/demo_0.pkl")  # your single demo pickle
-DEVICE = "cuda"  # or "cpu"
+@hydra.main(config_path="cfgs", config_name="config")
+def main(cfg: DictConfig):
+    # -----------------------------
+    # 1. Load processed demo PKL
+    # -----------------------------
+    pkl_file = Path("proc_data/default_scene/demo_task/demo_0.pkl")  # e.g., processed_data_pkl/demo_task.pkl
+    with open(pkl_file, "rb") as f:
+        demo_data = pickle.load(f)
+    demo_obs = demo_data["observations"]
+    print(f"Loaded {len(demo_obs)} demo steps.")
 
-# --- LOAD DATASET ---
-dataset = CustomTeleopBCDataset(PKL_FILE, action_repeat=1, history_len=1, temporal_agg=False)
-demo_actions = []
-for obs in dataset.observations:
-    act = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0)
-    demo_actions.append(act.astype(np.float32))
-demo_actions = np.stack(demo_actions)
+    # -----------------------------
+    # 2. Create environment via suite
+    # -----------------------------
+    from suite import task_make_fn
+    envs, _ = task_make_fn(demo_data)
+    env = envs[0]
 
-# --- CREATE DUMMY ENV ---
-class DummyStep:
-    def __init__(self, obs):
-        self.observation = obs
-        self.last_flag = False
-        self.reward = 0.0
-        self.observation["goal_achieved"] = False
-    def last(self):
-        return self.last_flag
+    # -----------------------------
+    # 3. Setup Workspace & Agent
+    # -----------------------------
+    workspace = WorkspaceIL(cfg)
+    workspace.env = [env]  # replace with single env
 
-class DummyEnv:
-    def __init__(self, dataset):
-        self.dataset = dataset
-        self.idx = 0
-        self._max_episode_len = len(dataset.observations)
-    def reset(self):
-        self.idx = 0
-        obs = self.dataset.observations[self.idx]
-        return DummyStep({"features": np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0)})
-    def step(self, action):
-        self.idx += 1
-        done = self.idx >= self._max_episode_len
-        obs = self.dataset.observations[min(self.idx, self._max_episode_len - 1)]
-        ts = DummyStep({"features": np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0)})
-        ts.last_flag = done
-        return ts
+    # Load BC weights
+    bc_snapshot = Path("exp_local/2025.11.10_train/deterministic/131852/snapshot/500.pt")
+    workspace.load_snapshot({"bc": bc_snapshot})
+        
 
-# --- LOAD POLICY ---
-env = DummyEnv(dataset)
-obs_spec = {"features": (dataset._max_state_dim,)}
-action_spec = type('ActionSpec', (), {"shape": (dataset._max_action_dim,)})()
+    workspace.agent.train(False)  # eval mode
 
-cfg = type('Cfg', (), {})()  # minimal config
-cfg.agent = type('AgentCfg', (), {"obs_shape": obs_spec, "action_shape": action_spec, "policy_head": "bc"})()
-cfg.use_proprio = True
-agent = make_agent(obs_spec, action_spec, cfg)
-payload = torch.load(SNAPSHOT_PATH)
-agent.load_snapshot(payload, eval=True)
-agent.train(False)
+    # -----------------------------
+    # 4. Rollout and compare actions
+    # -----------------------------
+    total_mse = 0.0
+    for step_idx, obs_dict in enumerate(demo_obs):
+        # Build agent observation
+        agent_obs = {
+            "features": torch.tensor(
+                np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]])[None, :],
+                dtype=torch.float32,
+                device=workspace.device
+            ),
+            "pixels0": torch.zeros((1, 3, 84, 84), dtype=torch.float32, device=workspace.device),
+            "task_emb": torch.tensor(demo_data["task_emb"][None, :], dtype=torch.float32, device=workspace.device),
+        }
 
-# --- ROLLOUT & COMPARE ---
-obs_step = env.reset()
-diffs = []
+        with torch.no_grad():
+            action = workspace.agent.act(
+                agent_obs,
+                prompt=None,
+                stats=workspace.stats,
+                step=step_idx,
+                global_step=workspace.global_step,
+                eval_mode=True,
+            )
 
-for step_idx in range(len(demo_actions)):
-    obs_tensor = {"features": torch.tensor(obs_step.observation["features"], dtype=torch.float32).unsqueeze(0).to(DEVICE)}
-    with torch.no_grad():
-        pred_action = agent.act(obs_tensor, prompt=None, stats=dataset.stats, step=step_idx, global_step=0, eval_mode=True)
-    demo_action = demo_actions[step_idx]
-    diff = pred_action.squeeze(0).cpu().numpy() - demo_action
-    diffs.append(diff)
-    print(f"Step {step_idx}: max diff = {np.max(np.abs(diff))}, mean diff = {np.mean(diff)}")
-    obs_step = env.step(pred_action)
+        # Get corresponding demo action (normalized)
+        demo_action = np.concatenate([obs_dict["commanded_arm_states"], obs_dict["commanded_ruka_states"]])
+        demo_action = workspace.expert_replay_loader.dataset.preprocess["actions"](demo_action)
 
-diffs = np.stack(diffs)
-print("Overall max difference:", np.max(np.abs(diffs)))
-print("Overall mean difference:", np.mean(np.abs(diffs)))
+        # Compute MSE
+        mse = ((action.cpu().numpy().ravel() - demo_action) ** 2).mean()
+        total_mse += mse
+
+    mean_mse = total_mse / len(demo_obs)
+    print(f"Demo rollout finished. Steps: {len(demo_obs)}, Mean action MSE: {mean_mse:.8f}")
+
+if __name__ == "__main__":
+    main()
