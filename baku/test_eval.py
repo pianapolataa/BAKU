@@ -57,7 +57,6 @@ def main(cfg: DictConfig):
     # -----------------------------
     total_mse = 0.0
     for step_idx, obs_dict in enumerate(demo_obs):
-        # Build agent observation
         agent_obs = {
             "features": np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]]).astype(np.float32),
             "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
@@ -74,16 +73,18 @@ def main(cfg: DictConfig):
                 eval_mode=True,
             )
 
+        # convert to numpy if tensor
         if isinstance(agent_action_raw, torch.Tensor):
             agent_action_raw = agent_action_raw.cpu().numpy()
 
-        # Build demo action
+        # print the action
+        print(f"Step {step_idx}: agent_action_raw = {agent_action_raw}")
+
         demo_action_raw = np.concatenate([
             obs_dict["commanded_arm_states"],
             obs_dict["commanded_ruka_states"]
         ]).astype(np.float32)
 
-        # Compute MSE
         mse = ((agent_action_raw - demo_action_raw) ** 2).mean()
         total_mse += mse
 
