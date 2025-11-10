@@ -77,13 +77,18 @@ def main(cfg: DictConfig):
         if isinstance(agent_action_raw, torch.Tensor):
             agent_action_raw = agent_action_raw.cpu().numpy()
 
-        # print the action
-        print(f"Step {step_idx}: agent = {agent_action_raw}, demo = {demo_action_raw}")
 
         demo_action_raw = np.concatenate([
             obs_dict["commanded_arm_states"],
             obs_dict["commanded_ruka_states"]
         ]).astype(np.float32)
+
+        # convert to numpy if tensor
+        if isinstance(demo_action_raw, torch.Tensor):
+            demo_action_raw = demo_action_raw.cpu().numpy()
+
+        # print the action
+        print(f"Step {step_idx}: agent = {agent_action_raw}, demo = {demo_action_raw}")
 
         mse = ((agent_action_raw - demo_action_raw) ** 2).mean()
         total_mse += mse
