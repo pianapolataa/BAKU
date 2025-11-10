@@ -7,15 +7,23 @@ import hydra
 from omegaconf import DictConfig
 from train import WorkspaceIL  # assumes WorkspaceIL is importable
 
+# Helper to convert dict -> object with attributes
+class DictToObj:
+    def __init__(self, d):
+        for k, v in d.items():
+            setattr(self, k, v)
+
 @hydra.main(config_path="cfgs", config_name="config")
 def main(cfg: DictConfig):
     # -----------------------------
     # 1. Load processed demo PKL
     # -----------------------------
-    pkl_file = Path("/home_shared/grail_sissi/BAKU/baku/proc_data/default_scene/demo_task/demo_0.pkl")  # e.g., processed_data_pkl/demo_task.pkl
+    pkl_file = Path("/home_shared/grail_sissi/BAKU/baku/proc_data/default_scene/demo_task/demo_0.pkl")
     with open(pkl_file, "rb") as f:
-        demo_data = pickle.load(f)
-    demo_obs = demo_data["observations"]
+        demo_data_dict = pickle.load(f)
+
+    demo_data = DictToObj(demo_data_dict)  # wrap dict so task_make_fn can access attributes
+    demo_obs = demo_data.observations
     print(f"Loaded {len(demo_obs)} demo steps.")
 
     # -----------------------------
@@ -31,10 +39,9 @@ def main(cfg: DictConfig):
     workspace = WorkspaceIL(cfg)
     workspace.env = [env]  # replace with single env
 
-    # Load BC weights
+    # Load BC weights (hardcoded)
     bc_snapshot = Path("/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.10_train/deterministic/131852/snapshot/500.pt")
     workspace.load_snapshot({"bc": bc_snapshot})
-        
 
     workspace.agent.train(False)  # eval mode
 
@@ -51,7 +58,7 @@ def main(cfg: DictConfig):
                 device=workspace.device
             ),
             "pixels0": torch.zeros((1, 3, 84, 84), dtype=torch.float32, device=workspace.device),
-            "task_emb": torch.tensor(demo_data["task_emb"][None, :], dtype=torch.float32, device=workspace.device),
+            "task_emb": torch.tensor(demo_data.task_emb[None, :], dtype=torch.float32, device=workspace.device),
         }
 
         with torch.no_grad():
