@@ -93,7 +93,8 @@ def main(cfg: DictConfig):
         max_abs_diff = np.maximum(max_abs_diff, abs_diff)
 
         # print the action comparison
-        print(f"Step {step_idx}: agent = {agent_action_raw}, demo = {demo_action_raw}")
+        # print(f"Step {step_idx}: agent = {agent_action_raw}, demo = {demo_action_raw}")
+        print(f"Differnce: {abs_diff}")
 
         mse = (abs_diff ** 2).mean()
         total_mse += mse
