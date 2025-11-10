@@ -56,6 +56,9 @@ def main(cfg: DictConfig):
     # 5. Rollout and compare raw actions
     # -----------------------------
     total_mse = 0.0
+    # initialize array to track max abs differences for each action index
+    max_abs_diff = np.zeros(23, dtype=np.float32)
+
     for step_idx, obs_dict in enumerate(demo_obs):
         agent_obs = {
             "features": np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]]).astype(np.float32),
@@ -73,29 +76,31 @@ def main(cfg: DictConfig):
                 eval_mode=True,
             )
 
-        # convert to numpy if tensor
         if isinstance(agent_action_raw, torch.Tensor):
             agent_action_raw = agent_action_raw.cpu().numpy()
-
 
         demo_action_raw = np.concatenate([
             obs_dict["commanded_arm_states"],
             obs_dict["commanded_ruka_states"]
         ]).astype(np.float32)
 
-        # convert to numpy if tensor
         if isinstance(demo_action_raw, torch.Tensor):
             demo_action_raw = demo_action_raw.cpu().numpy()
 
-        # print the action
+        # compute absolute difference
+        abs_diff = np.abs(agent_action_raw - demo_action_raw)
+        # update max_abs_diff per index
+        max_abs_diff = np.maximum(max_abs_diff, abs_diff)
+
+        # print the action comparison
         print(f"Step {step_idx}: agent = {agent_action_raw}, demo = {demo_action_raw}")
 
-        mse = ((agent_action_raw - demo_action_raw) ** 2).mean()
+        mse = (abs_diff ** 2).mean()
         total_mse += mse
 
     mean_mse = total_mse / len(demo_obs)
     print(f"Demo rollout finished. Steps: {len(demo_obs)}, Mean raw action MSE: {mean_mse:.8f}")
-
+    print(f"Max absolute difference per action index: {max_abs_diff}")
 
 if __name__ == "__main__":
     main()
