@@ -12,7 +12,7 @@ def main(cfg: DictConfig):
     # -----------------------------
     # 1. Load processed demo PKL
     # -----------------------------
-    pkl_file = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl")  # e.g., processed_data_pkl/demo_task.pkl
+    pkl_file = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl")
     with open(pkl_file, "rb") as f:
         demo_data = pickle.load(f)
     demo_obs = demo_data["observations"]
@@ -29,17 +29,28 @@ def main(cfg: DictConfig):
     # 3. Setup Workspace & Agent
     # -----------------------------
     workspace = WorkspaceIL(cfg)
-    workspace.env = [env]  # replace with single env
+    workspace.env = [env]
 
     # Load BC weights
     bc_snapshot = Path("/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.10_train/deterministic/131852/snapshot/500.pt")
     workspace.load_snapshot({"bc": bc_snapshot})
-        
 
     workspace.agent.train(False)  # eval mode
 
+    # Build normalization stats
+    norm_stats = {
+        workspace.agent.proprio_key: {
+            "min": demo_data["min_arm"],
+            "max": demo_data["max_arm"]
+        },
+        "actions": {
+            "min": demo_data["min_actions"],
+            "max": demo_data["max_actions"]
+        }
+    }
+
     # -----------------------------
-    # 4. Rollout and compare actions
+    # 4. Rollout and compare raw actions
     # -----------------------------
     total_mse = 0.0
     for step_idx, obs_dict in enumerate(demo_obs):
@@ -55,25 +66,28 @@ def main(cfg: DictConfig):
         }
 
         with torch.no_grad():
-            action = workspace.agent.act(
+            # Get agent action in raw scale
+            agent_action_raw = workspace.agent.act(
                 agent_obs,
                 prompt=None,
-                stats=workspace.stats,
+                norm_stats=norm_stats,
                 step=step_idx,
                 global_step=workspace.global_step,
                 eval_mode=True,
             )
 
-        # Get corresponding demo action (normalized)
-        demo_action = np.concatenate([obs_dict["commanded_arm_states"], obs_dict["commanded_ruka_states"]])
-        demo_action = workspace.expert_replay_loader.dataset.preprocess["actions"](demo_action)
+        # Build raw demo action (concatenate arm + ruka)
+        demo_action_raw = np.concatenate([
+            obs_dict["commanded_arm_states"],
+            obs_dict["commanded_ruka_states"]
+        ])
 
-        # Compute MSE
-        mse = ((action.cpu().numpy().ravel() - demo_action) ** 2).mean()
+        # Compute MSE on raw actions
+        mse = ((agent_action_raw - demo_action_raw) ** 2).mean()
         total_mse += mse
 
     mean_mse = total_mse / len(demo_obs)
-    print(f"Demo rollout finished. Steps: {len(demo_obs)}, Mean action MSE: {mean_mse:.8f}")
+    print(f"Demo rollout finished. Steps: {len(demo_obs)}, Mean raw action MSE: {mean_mse:.8f}")
 
 if __name__ == "__main__":
     main()
