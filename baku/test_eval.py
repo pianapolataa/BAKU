@@ -12,7 +12,7 @@ def main(cfg: DictConfig):
     # -----------------------------
     # 1. Load processed demo PKL
     # -----------------------------
-    pkl_file = Path("/home_shared/grail_sissi/BAKU/baku/proc_data/default_scene/demo_task/demo_0.pkl")  # e.g., processed_data_pkl/demo_task.pkl
+    pkl_file = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl")  # e.g., processed_data_pkl/demo_task.pkl
     with open(pkl_file, "rb") as f:
         demo_data = pickle.load(f)
     demo_obs = demo_data["observations"]
