@@ -14,8 +14,7 @@ DEVICE = "cuda"  # or "cpu"
 # --- LOAD DATASET ---
 dataset = CustomTeleopBCDataset(PKL_FILE, action_repeat=1, history_len=1, temporal_agg=False)
 demo_actions = []
-for i in range(len(dataset.observations)):
-    obs = dataset.observations[i]
+for obs in dataset.observations:
     act = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0)
     demo_actions.append(act.astype(np.float32))
 demo_actions = np.stack(demo_actions)
@@ -24,8 +23,11 @@ demo_actions = np.stack(demo_actions)
 class DummyStep:
     def __init__(self, obs):
         self.observation = obs
-    def last(self): 
-        return False
+        self.last_flag = False
+        self.reward = 0.0
+        self.observation["goal_achieved"] = False
+    def last(self):
+        return self.last_flag
 
 class DummyEnv:
     def __init__(self, dataset):
@@ -38,16 +40,10 @@ class DummyEnv:
         return DummyStep({"features": np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0)})
     def step(self, action):
         self.idx += 1
-        if self.idx >= self._max_episode_len:
-            done = True
-            obs = self.dataset.observations[-1]
-        else:
-            done = False
-            obs = self.dataset.observations[self.idx]
+        done = self.idx >= self._max_episode_len
+        obs = self.dataset.observations[min(self.idx, self._max_episode_len - 1)]
         ts = DummyStep({"features": np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0)})
         ts.last_flag = done
-        ts.reward = 0
-        ts.observation["goal_achieved"] = False
         return ts
 
 # --- LOAD POLICY ---
