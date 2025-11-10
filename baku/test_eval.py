@@ -57,12 +57,12 @@ def main(cfg: DictConfig):
         # Build agent observation
         agent_obs = {
             "features": torch.tensor(
-                np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]])[None, :],
+                np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]]),
                 dtype=torch.float32,
                 device=workspace.device
             ),
-            "pixels0": torch.zeros((3, 84, 84), dtype=torch.float32, device=workspace.device),
-            "task_emb": torch.tensor(demo_data["task_emb"][None, :], dtype=torch.float32, device=workspace.device),
+            "pixels0": torch.zeros((84, 84, 3), dtype=torch.float32, device=workspace.device),
+            "task_emb": torch.tensor(demo_data["task_emb"], dtype=torch.float32, device=workspace.device),
         }
 
         with torch.no_grad():
