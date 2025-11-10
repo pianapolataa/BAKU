@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from pathlib import Path
 from train import WorkspaceIL, make_agent  # reuse your training code
-from dataloader import CustomTeleopBCDataset  # your dataset class
+from read_data.custom import CustomTeleopBCDataset  # your dataset class
 
 # --- CONFIG ---
 SNAPSHOT_PATH = Path("exp_local/2025.11.10_train/deterministic/131852/snapshot/500.pt")  # your saved policy
