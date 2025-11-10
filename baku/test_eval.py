@@ -61,7 +61,7 @@ def main(cfg: DictConfig):
                 dtype=torch.float32,
                 device=workspace.device
             ),
-            "pixels0": torch.zeros((1, 3, 84, 84), dtype=torch.float32, device=workspace.device),
+            "pixels0": torch.zeros((3, 84, 84), dtype=torch.float32, device=workspace.device),
             "task_emb": torch.tensor(demo_data["task_emb"][None, :], dtype=torch.float32, device=workspace.device),
         }
 
