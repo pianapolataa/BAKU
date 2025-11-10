@@ -21,7 +21,7 @@ def main(cfg: DictConfig):
     # -----------------------------
     # 2. Create environment via suite
     # -----------------------------
-    from suite import task_make_fn
+    from suite.custom import task_make_fn
     envs, _ = task_make_fn(demo_data)
     env = envs[0]
 
