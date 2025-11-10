@@ -60,7 +60,7 @@ def main(cfg: DictConfig):
         # Build agent observation
         agent_obs = {
             "features": np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]]).astype(np.float32),
-            "pixels0": np.zeros((1, 3, 84, 84), dtype=np.uint8),
+            "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
             "task_emb": np.asarray(demo_data["task_emb"], dtype=np.float32),
         }
 
