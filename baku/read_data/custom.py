@@ -15,7 +15,7 @@ class CustomTeleopBCDataset(IterableDataset):
     """
 
     def __init__(
-        self, pkl_file, action_repeat: int = 10, history_len: int = 1, temporal_agg: bool = False
+        self, pkl_file, action_repeat: int = 1, history_len: int = 1, temporal_agg: bool = True
     ):
         self.pkl_file = pkl_file
         # match agent's expected repeat by default; can be overridden via Hydra param
