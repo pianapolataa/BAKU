@@ -122,7 +122,7 @@ def main(cfg: DictConfig):
     plt.axvline(max_val, color="purple", linestyle="--", label=f"Max: {max_val:.4f}")
     plt.legend()
     plt.tight_layout()
-    plt.savefig("diff_index7_hist.png")
+    plt.savefig("/home_shared/grail_sissi/BAKU/diff_index7_hist.png")
     print("Saved histogram to diff_index7_hist.png")
 
 if __name__ == "__main__":
