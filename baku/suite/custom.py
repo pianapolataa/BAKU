@@ -87,26 +87,28 @@ def make_custom_task(dataset, env_cls=DummyEnv, **env_kwargs):
     task_descriptions = [dataset.task_emb]
     return envs, task_descriptions
 
-def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, max_state_dim=50, max_action_dim=10, **env_kwargs):
+def task_make_fn(dataset, env_cls=DummyEnv, max_episode_len=1000, **env_kwargs):
     if isinstance(dataset, (dict, DictConfig)):
         dataset = hydra.utils.call(dataset)
 
-    # don't forward config-only keys to env constructor
-    env_kwargs = dict(env_kwargs)
-    env_kwargs.pop("max_action_dim", None)
-
-    state_dim = getattr(dataset, "_max_state_dim", max_state_dim)
+    state_dim = getattr(dataset, "_max_state_dim", 50)
     action_dim = 23
     episode_len = getattr(dataset, "_max_episode_len", max_episode_len)
 
-    min_arm, max_arm = dataset.min_arm, dataset.max_arm
-    min_ruka, max_ruka = dataset.min_ruka, dataset.max_ruka
-    assert len(dataset.min_arm) + len(dataset.min_ruka) == 23, \
-    f"Expected 23-dim action, got {len(dataset.min_arm) + len(dataset.min_ruka)}"
-    action_low = np.concatenate([min_arm, min_ruka]).astype(np.float32)
-    action_high = np.concatenate([max_arm, max_ruka]).astype(np.float32)
+    # Get action bounds
+    action_low = np.concatenate([dataset.min_arm, dataset.min_ruka]).astype(np.float32)
+    action_high = np.concatenate([dataset.max_arm, dataset.max_ruka]).astype(np.float32)
 
-    envs = [env_cls(state_dim, action_dim, episode_len, action_low=action_low, action_high=action_high, **env_kwargs)]    
+    envs = [
+        env_cls(
+            state_dim,
+            action_dim,
+            episode_len,
+            action_low=action_low,
+            action_high=action_high,
+            **env_kwargs
+        )
+    ]
     task_descriptions = [getattr(dataset, "task_emb", None)]
     return envs, task_descriptions
 
