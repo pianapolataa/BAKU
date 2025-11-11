@@ -66,6 +66,10 @@ class CustomTeleopBCDataset(IterableDataset):
                     "max": np.concatenate([data["max_arm"], data["max_ruka"]]),
                 }
             }
+            self.preprocess = {
+                "actions": lambda x: 2 * (x - self.stats["actions"]["min"]) /
+                                     (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
+            }
         else:
             self.stats = {"actions": {"min": 0.0, "max": 1.0}}
             self.preprocess = {"actions": lambda x: x}
@@ -74,18 +78,26 @@ class CustomTeleopBCDataset(IterableDataset):
         idx = np.random.randint(0, self._num_samples)
         obs = self.observations[idx]
 
-        # Concatenate proprioceptive features (arm + ruka) + actions
+        # Concatenate proprioceptive features (arm + ruka)
         features = np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0).astype(np.float32)
+        # normalize features using the same min/max as actions
+        features = 2 * (features - self.stats["actions"]["min"]) / (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
+
+        # Concatenate commanded actions and normalize
+        actions = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0).astype(np.float32)
+        actions = self.preprocess["actions"](actions)
+
+        # Build Libero-style features: (history_len, max_state_dim)
         feat = np.zeros((self.history_len, self.__max_state_dim), dtype=np.float32)
         feat[0, :features.shape[0]] = features
-        actions = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0).astype(np.float32)
 
+        # Build Libero-style actions: (history_len, action_repeat, action_dim)
         if self.temporal_agg:
             sampled_actions = np.tile(actions.reshape(1, 1, -1),
-                                    (self.history_len, self.action_repeat, 1)).astype(np.float32)
+                                      (self.history_len, self.action_repeat, 1)).astype(np.float32)
         else:
             sampled_actions = np.tile(actions.reshape(1, 1, -1),
-                                    (self.history_len, 1, 1)).astype(np.float32)
+                                      (self.history_len, 1, 1)).astype(np.float32)
 
         return {
             "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),
