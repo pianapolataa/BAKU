@@ -53,25 +53,29 @@ class CustomTeleopBCDataset(IterableDataset):
             }
         }
 
+        print("ruka cmd min/max:", self.min_ruka_cmd.min(), self.max_ruka_cmd.max())
 
-        print(self.max_ruka_cmd)
-        print(self.min_ruka_cmd)
-
-        # --- normalize all features and actions upfront ---
+        # --- normalize all features and actions upfront (to [0, 1]) ---
         self.normalized_features = []
         self.normalized_actions = []
+
+        eps = 1e-5  # avoid divide-by-zero
 
         for obs in self.observations:
             # features: arm + ruka
             feat = np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0).astype(np.float32)
-            feat = 2 * (feat - self.stats["features"]["min"]) / \
-                   (self.stats["features"]["max"] - self.stats["features"]["min"] + 1e-5) - 1
+            feat = (feat - self.stats["features"]["min"]) / (
+                self.stats["features"]["max"] - self.stats["features"]["min"] + eps
+            )
+            feat = np.clip(feat, 0.0, 1.0)
             self.normalized_features.append(feat)
 
             # actions: commanded arm + ruka
             act = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0).astype(np.float32)
-            act = 2 * (act - self.stats["actions"]["min"]) / \
-                  (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
+            act = (act - self.stats["actions"]["min"]) / (
+                self.stats["actions"]["max"] - self.stats["actions"]["min"] + eps
+            )
+            act = np.clip(act, 0.0, 1.0)
             self.normalized_actions.append(act)
 
         self.normalized_features = np.stack(self.normalized_features, axis=0)
