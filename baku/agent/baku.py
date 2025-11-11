@@ -532,6 +532,8 @@ class BCAgent:
                 + norm_stats["actions"]["min"]
             )
             print("normed")
+        else:
+            print("no norm")
 
         # lang projection
         if self.use_language:
