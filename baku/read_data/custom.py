@@ -73,7 +73,7 @@ class CustomTeleopBCDataset(IterableDataset):
         self.normalized_features = np.stack(self.normalized_features, axis=0)
         self.normalized_actions = np.stack(self.normalized_actions, axis=0)
 
-        print("Normalized actions min/max:", np.min(self.normalized_actions), np.max(self.normalized_actions))
+        print("sent actions min/max:", np.min(self.stats["actions"]["min"]), np.max(self.stats["actions"]["max"]))
 
     def _sample(self):
         idx = np.random.randint(0, self._num_samples)
