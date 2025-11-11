@@ -5,7 +5,7 @@ import numpy as np
 from pathlib import Path
 import hydra
 from omegaconf import DictConfig
-from train import WorkspaceIL  # your existing import
+from train import WorkspaceIL
 from suite.custom import task_make_fn
 import matplotlib.pyplot as plt
 
@@ -37,7 +37,7 @@ def main(cfg: DictConfig):
         "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.11_train/deterministic/010941/snapshot/80000.pt"
     )
     workspace.load_snapshot({"bc": bc_snapshot_path})
-    workspace.agent.train(False)  # set agent to eval mode
+    workspace.agent.train(False)
 
     # -----------------------------
     # 4. Build normalization stats
@@ -54,13 +54,10 @@ def main(cfg: DictConfig):
     }
 
     # -----------------------------
-    # 5. Rollout and compare raw actions
+    # 5. Rollout and record raw differences (not abs)
     # -----------------------------
     total_mse = 0.0
-    max_abs_diff = np.zeros(23, dtype=np.float32)
-
-    # Collect differences for action index 7
-    diff_idx7 = []
+    diff_idx7 = []  # signed differences
 
     for step_idx, obs_dict in enumerate(demo_obs):
         agent_obs = {
@@ -87,43 +84,34 @@ def main(cfg: DictConfig):
             obs_dict["commanded_ruka_states"]
         ]).astype(np.float32)
 
-        if isinstance(demo_action_raw, torch.Tensor):
-            demo_action_raw = demo_action_raw.cpu().numpy()
+        # compute signed difference
+        diff = agent_action_raw - demo_action_raw
+        diff_idx7.append(diff[11])  # index 7 only
 
-        # compute absolute difference
-        abs_diff = np.abs(agent_action_raw - demo_action_raw)
-        max_abs_diff = np.maximum(max_abs_diff, abs_diff)
-
-        diff_idx7.append(abs_diff[1])  # collect index 7 difference
-
-        mse = (abs_diff ** 2).mean()
+        mse = (diff ** 2).mean()
         total_mse += mse
 
     mean_mse = total_mse / len(demo_obs)
     print(f"Demo rollout finished. Steps: {len(demo_obs)}, Mean raw action MSE: {mean_mse:.8f}")
-    print(f"Max absolute difference per action index: {max_abs_diff}")
 
     # -----------------------------
-    # 6. Plot histogram for action index 7
+    # 6. Plot difference over time
     # -----------------------------
     diff_idx7 = np.array(diff_idx7)
-    plt.figure(figsize=(7,4))
-    plt.hist(diff_idx7, bins=50, color="skyblue", edgecolor="black")
-    plt.title("Absolute Differences for Action Index 7")
-    plt.xlabel("Absolute difference")
-    plt.ylabel("Frequency")
+    steps = np.arange(len(diff_idx7))
 
-    # Add mean, median, max lines
-    mean_val = diff_idx7.mean()
-    median_val = np.median(diff_idx7)
-    max_val = diff_idx7.max()
-    plt.axvline(mean_val, color="red", linestyle="--", label=f"Mean: {mean_val:.4f}")
-    plt.axvline(median_val, color="green", linestyle="--", label=f"Median: {median_val:.4f}")
-    plt.axvline(max_val, color="purple", linestyle="--", label=f"Max: {max_val:.4f}")
+    plt.figure(figsize=(8, 4))
+    plt.plot(steps, diff_idx7, label="Action index 7 difference", color="dodgerblue")
+    plt.axhline(0, color="black", linestyle="--", linewidth=1)
+    plt.title("Action Index 7: Agent - Demo Difference Over Time")
+    plt.xlabel("Step")
+    plt.ylabel("Difference (Agent - Demo)")
     plt.legend()
     plt.tight_layout()
-    plt.savefig("/home_shared/grail_sissi/BAKU/diff_index7_hist.png")
-    print("Saved histogram to diff_index7_hist.png")
+
+    save_path = "/home_shared/grail_sissi/BAKU/diff_index7_timeline.png"
+    plt.savefig(save_path)
+    print(f"Saved time-series difference plot to {save_path}")
 
 if __name__ == "__main__":
     main()
