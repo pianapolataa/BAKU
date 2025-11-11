@@ -102,8 +102,8 @@ def main(cfg: DictConfig):
     steps = np.arange(len(agent_values))
 
     plt.figure(figsize=(9, 4))
-    plt.plot(steps, demo_values, label="Demo (Ground Truth)", color="black", linewidth=1.5)
-    plt.plot(steps, agent_values, label="Agent (Predicted)", color="dodgerblue", linestyle="--")
+    plt.plot(steps, demo_values, label="Demo", color="black", linewidth=1.5)
+    plt.plot(steps, agent_values, label="Predicted", color="dodgerblue", linestyle="--")
     plt.title(f"Action Index {idx}: Raw Commanded Values Over Time")
     plt.xlabel("Step")
     plt.ylabel("Raw Action Value")
