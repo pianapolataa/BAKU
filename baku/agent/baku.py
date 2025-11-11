@@ -531,6 +531,7 @@ class BCAgent:
                 * (norm_stats["actions"]["max"] - norm_stats["actions"]["min"])
                 + norm_stats["actions"]["min"]
             )
+            print("normed")
 
         # lang projection
         if self.use_language:
@@ -810,8 +811,8 @@ class BCAgent:
         if update:
             # actor loss
             stddev = utils.schedule(self.stddev_schedule, step)
-            print("features mean/std:", features.mean().item(), features.std().item())
-            print("actions mean/std:", action.mean().item(), action.std().item())
+            # print("features mean/std:", features.mean().item(), features.std().item())
+            # print("actions mean/std:", action.mean().item(), action.std().item())
             _, actor_loss = self.actor(
                 features, num_prompt_feats, stddev, action, **kwargs
             )
