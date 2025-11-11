@@ -59,7 +59,7 @@ class WorkspaceIL:
         print("actions shape:", sample["actions"].shape)
         print("actions min/max:", sample["actions"].min(), sample["actions"].max())
         print("task_emb shape:", sample["task_emb"].shape)
-        print("sample actions first 5:", sample["actions"][0,0,:5])
+        print("sample actions", sample["actions"][0,0,:])
         print("====================")
 
         # create logger
