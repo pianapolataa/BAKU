@@ -810,6 +810,8 @@ class BCAgent:
         if update:
             # actor loss
             stddev = utils.schedule(self.stddev_schedule, step)
+            print("features mean/std:", features.mean().item(), features.std().item())
+            print("actions mean/std:", action.mean().item(), action.std().item())
             _, actor_loss = self.actor(
                 features, num_prompt_feats, stddev, action, **kwargs
             )
