@@ -94,7 +94,7 @@ def main(cfg: DictConfig):
         abs_diff = np.abs(agent_action_raw - demo_action_raw)
         max_abs_diff = np.maximum(max_abs_diff, abs_diff)
 
-        diff_idx7.append(abs_diff[9])  # collect index 7 difference
+        diff_idx7.append(abs_diff[11])  # collect index 7 difference
 
         mse = (abs_diff ** 2).mean()
         total_mse += mse
