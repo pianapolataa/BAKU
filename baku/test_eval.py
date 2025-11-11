@@ -9,6 +9,7 @@ from train import WorkspaceIL
 from suite.custom import task_make_fn
 import matplotlib.pyplot as plt
 
+
 @hydra.main(config_path="cfgs", config_name="config")
 def main(cfg: DictConfig):
     # -----------------------------
@@ -45,19 +46,20 @@ def main(cfg: DictConfig):
     norm_stats = {
         "features": {
             "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"]]),
-            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]])
+            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]]),
         },
         "actions": {
             "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"]]),
-            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]])
-        }
+            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]]),
+        },
     }
 
     # -----------------------------
-    # 5. Rollout and record raw differences (not abs)
+    # 5. Rollout and collect raw values
     # -----------------------------
+    idx = 11  # the action index to visualize
+    agent_values, demo_values = [], []
     total_mse = 0.0
-    diff_idx7 = []  # signed differences
 
     for step_idx, obs_dict in enumerate(demo_obs):
         agent_obs = {
@@ -79,39 +81,39 @@ def main(cfg: DictConfig):
         if isinstance(agent_action_raw, torch.Tensor):
             agent_action_raw = agent_action_raw.cpu().numpy()
 
-        demo_action_raw = np.concatenate([
-            obs_dict["commanded_arm_states"],
-            obs_dict["commanded_ruka_states"]
-        ]).astype(np.float32)
+        demo_action_raw = np.concatenate(
+            [obs_dict["commanded_arm_states"], obs_dict["commanded_ruka_states"]]
+        ).astype(np.float32)
 
-        # compute signed difference
+        # record raw values for the chosen action index
+        agent_values.append(agent_action_raw[idx])
+        demo_values.append(demo_action_raw[idx])
+
+        # accumulate MSE for sanity check
         diff = agent_action_raw - demo_action_raw
-        diff_idx7.append(diff[11])  # index 7 only
-
-        mse = (diff ** 2).mean()
-        total_mse += mse
+        total_mse += (diff**2).mean()
 
     mean_mse = total_mse / len(demo_obs)
     print(f"Demo rollout finished. Steps: {len(demo_obs)}, Mean raw action MSE: {mean_mse:.8f}")
 
     # -----------------------------
-    # 6. Plot difference over time
+    # 6. Plot raw values over time
     # -----------------------------
-    diff_idx7 = np.array(diff_idx7)
-    steps = np.arange(len(diff_idx7))
+    steps = np.arange(len(agent_values))
 
-    plt.figure(figsize=(8, 4))
-    plt.plot(steps, diff_idx7, label="Action index 7 difference", color="dodgerblue")
-    plt.axhline(0, color="black", linestyle="--", linewidth=1)
-    plt.title("Action Index 7: Agent - Demo Difference Over Time")
+    plt.figure(figsize=(9, 4))
+    plt.plot(steps, demo_values, label="Demo (Ground Truth)", color="black", linewidth=1.5)
+    plt.plot(steps, agent_values, label="Agent (Predicted)", color="dodgerblue", linestyle="--")
+    plt.title(f"Action Index {idx}: Raw Commanded Values Over Time")
     plt.xlabel("Step")
-    plt.ylabel("Difference (Agent - Demo)")
+    plt.ylabel("Raw Action Value")
     plt.legend()
     plt.tight_layout()
 
-    save_path = "/home_shared/grail_sissi/BAKU/diff_index7_timeline.png"
+    save_path = f"/home_shared/grail_sissi/BAKU/action_index{idx}_raw_vs_demo.png"
     plt.savefig(save_path)
-    print(f"Saved time-series difference plot to {save_path}")
+    print(f"Saved raw vs demo plot to {save_path}")
+
 
 if __name__ == "__main__":
     main()
