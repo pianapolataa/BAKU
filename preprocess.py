@@ -83,12 +83,19 @@ print("Computing min/max bounds...")
 
 arm_stack = np.stack([o["arm_states"] for o in observations], axis=0)
 hand_stack = np.stack([o["ruka_states"] for o in observations], axis=0)
+arm_stack_command = np.stack([o["commanded_arm_states"] for o in observations], axis=0)
+hand_stack_command = np.stack([o["commanded_ruka_states"] for o in observations], axis=0)
 
 max_arm = np.max(arm_stack, axis=0)
 min_arm = np.min(arm_stack, axis=0)
-
 max_ruka = np.max(hand_stack, axis=0)
 min_ruka = np.min(hand_stack, axis=0)
+
+max_arm_command = np.max(arm_stack_command, axis=0)
+min_arm_command = np.min(arm_stack_command, axis=0)
+
+max_ruka_command = np.max(hand_stack_command, axis=0)
+min_ruka_command = np.min(hand_stack_command, axis=0)
 
 # ----------------------------
 # TASK EMBEDDING (dummy)
@@ -106,6 +113,10 @@ data = {
     "min_arm": min_arm,
     "max_ruka": max_ruka,
     "min_ruka": min_ruka,
+    "max_arm_commanded": max_arm_command,
+    "min_arm_commanded": min_arm_command,
+    "max_ruka_commanded": max_ruka_command,
+    "min_ruka_commanded": min_ruka_command,
     "task_emb": task_emb
 }
 
