@@ -9,4 +9,5 @@ actions = np.stack([
     for obs in data["observations"]
 ])
 
-print("raw actions min/max:", actions.min(), actions.max())
+print("raw actions min/max:", data["min_ruka"], data["max_ruka"])
+print("raw actions min/max:", data["min_arm"], data["max_arm"])
