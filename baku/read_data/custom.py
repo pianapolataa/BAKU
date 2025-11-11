@@ -27,15 +27,15 @@ class CustomTeleopBCDataset(IterableDataset):
         self.task_emb = np.asarray(data.get("task_emb", np.zeros(1)), dtype=np.float32)
 
         # Extract min/max for normalization
-        self.min_arm = np.array(data.get("min_arm", np.zeros(7)), dtype=np.float32)
-        self.max_arm = np.array(data.get("max_arm", np.ones(7)), dtype=np.float32)
-        self.min_ruka = np.array(data.get("min_ruka", np.zeros(16)), dtype=np.float32)
-        self.max_ruka = np.array(data.get("max_ruka", np.ones(16)), dtype=np.float32)
+        self.min_arm = np.array(data["min_arm"], dtype=np.float32)
+        self.max_arm = np.array(data["max_arm"], dtype=np.float32)
+        self.min_ruka = np.array(data["min_ruka"], dtype=np.float32)
+        self.max_ruka = np.array(data["max_ruka"], dtype=np.float32)
 
-        self.min_arm_cmd = np.array(data.get("min_arm_commanded", np.zeros(7)), dtype=np.float32)
-        self.max_arm_cmd = np.array(data.get("max_arm_commanded", np.ones(7)), dtype=np.float32)
-        self.min_ruka_cmd = np.array(data.get("min_ruka_commanded", np.zeros(16)), dtype=np.float32)
-        self.max_ruka_cmd = np.array(data.get("max_ruka_commanded", np.ones(16)), dtype=np.float32)
+        self.min_arm_cmd = np.array(data["min_arm_commanded"], dtype=np.float32)
+        self.max_arm_cmd = np.array(data["max_arm_commanded"], dtype=np.float32)
+        self.min_ruka_cmd = np.array(data["min_ruka_commanded"], dtype=np.float32)
+        self.max_ruka_cmd = np.array(data["max_ruka_commanded"], dtype=np.float32)
 
         self.__max_state_dim = max(len(obs["arm_states"]) + len(obs["ruka_states"]) for obs in self.observations)
         self.__max_action_dim = max(len(obs["commanded_arm_states"]) + len(obs["commanded_ruka_states"]) for obs in self.observations)
