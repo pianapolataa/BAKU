@@ -15,7 +15,7 @@ class CustomTeleopBCDataset(IterableDataset):
     """
 
     def __init__(
-        self, pkl_file, action_repeat: int = 10, history_len: int = 1, temporal_agg: bool = True
+        self, pkl_file, action_repeat: int = 10, history_len: int = 1, temporal_agg: bool = False
     ):
         self.pkl_file = pkl_file
         # match agent's expected repeat by default; can be overridden via Hydra param
@@ -64,8 +64,7 @@ class CustomTeleopBCDataset(IterableDataset):
                 }
             }
             self.preprocess = {
-                "actions": lambda x: (x - self.stats["actions"]["min"])
-                / (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5)
+                "actions": lambda x: 2 * (x - self.stats["actions"]["min"]) / (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
             }
         else:
             # fallback: assume already normalized
