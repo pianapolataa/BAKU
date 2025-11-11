@@ -531,9 +531,6 @@ class BCAgent:
                 * (norm_stats["actions"]["max"] - norm_stats["actions"]["min"])
                 + norm_stats["actions"]["min"]
             )
-            print("normed")
-        else:
-            print("no norm")
 
         # lang projection
         if self.use_language:
