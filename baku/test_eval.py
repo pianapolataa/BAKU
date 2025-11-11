@@ -7,6 +7,7 @@ import hydra
 from omegaconf import DictConfig
 from train import WorkspaceIL  # your existing import
 from suite.custom import task_make_fn
+import matplotlib.pyplot as plt
 
 @hydra.main(config_path="cfgs", config_name="config")
 def main(cfg: DictConfig):
@@ -56,8 +57,10 @@ def main(cfg: DictConfig):
     # 5. Rollout and compare raw actions
     # -----------------------------
     total_mse = 0.0
-    # initialize array to track max abs differences for each action index
     max_abs_diff = np.zeros(23, dtype=np.float32)
+
+    # Collect differences for action index 7
+    diff_idx7 = []
 
     for step_idx, obs_dict in enumerate(demo_obs):
         agent_obs = {
@@ -89,12 +92,9 @@ def main(cfg: DictConfig):
 
         # compute absolute difference
         abs_diff = np.abs(agent_action_raw - demo_action_raw)
-        # update max_abs_diff per index
         max_abs_diff = np.maximum(max_abs_diff, abs_diff)
 
-        # print the action comparison
-        # print(f"Step {step_idx}: agent = {agent_action_raw}, demo = {demo_action_raw}")
-        print(f"Differnce: {abs_diff}")
+        diff_idx7.append(abs_diff[7])  # collect index 7 difference
 
         mse = (abs_diff ** 2).mean()
         total_mse += mse
@@ -102,6 +102,28 @@ def main(cfg: DictConfig):
     mean_mse = total_mse / len(demo_obs)
     print(f"Demo rollout finished. Steps: {len(demo_obs)}, Mean raw action MSE: {mean_mse:.8f}")
     print(f"Max absolute difference per action index: {max_abs_diff}")
+
+    # -----------------------------
+    # 6. Plot histogram for action index 7
+    # -----------------------------
+    diff_idx7 = np.array(diff_idx7)
+    plt.figure(figsize=(7,4))
+    plt.hist(diff_idx7, bins=50, color="skyblue", edgecolor="black")
+    plt.title("Absolute Differences for Action Index 7")
+    plt.xlabel("Absolute difference")
+    plt.ylabel("Frequency")
+
+    # Add mean, median, max lines
+    mean_val = diff_idx7.mean()
+    median_val = np.median(diff_idx7)
+    max_val = diff_idx7.max()
+    plt.axvline(mean_val, color="red", linestyle="--", label=f"Mean: {mean_val:.4f}")
+    plt.axvline(median_val, color="green", linestyle="--", label=f"Median: {median_val:.4f}")
+    plt.axvline(max_val, color="purple", linestyle="--", label=f"Max: {max_val:.4f}")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig("diff_index7_hist.png")
+    print("Saved histogram to diff_index7_hist.png")
 
 if __name__ == "__main__":
     main()
