@@ -53,6 +53,10 @@ class CustomTeleopBCDataset(IterableDataset):
             }
         }
 
+
+        print(self.max_ruka_cmd)
+        print(self.min_ruka_cmd)
+
         # --- normalize all features and actions upfront ---
         self.normalized_features = []
         self.normalized_actions = []
