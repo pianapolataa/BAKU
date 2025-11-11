@@ -45,53 +45,57 @@ class CustomTeleopBCDataset(IterableDataset):
 
         self._num_samples = len(self.observations)
 
-        # raw stacked actions
-        self.actions = np.stack(
-            [
-                np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]])
-                for obs in self.observations
-            ],
-            axis=0,
-        ).astype(np.float32)
-
-        # normalization using PKL min/max if present, else identity
+        # min/max stats
         if "min_arm" in data and "min_ruka" in data and "max_arm" in data and "max_ruka" in data:
             self.stats = {
                 "actions": {
-                    "min": np.concatenate([data["min_arm"], data["min_ruka"]]),
-                    "max": np.concatenate([data["max_arm"], data["max_ruka"]]),
+                    "min": np.concatenate([self.min_arm, self.min_ruka]),
+                    "max": np.concatenate([self.max_arm, self.max_ruka]),
                 },
                 "features": {
-                    "min": np.concatenate([data["min_arm"], data["min_ruka"]]),
-                    "max": np.concatenate([data["max_arm"], data["max_ruka"]]),
+                    "min": np.concatenate([self.min_arm, self.min_ruka]),
+                    "max": np.concatenate([self.max_arm, self.max_ruka]),
                 }
             }
-            self.preprocess = {
-                "actions": lambda x: 2 * (x - self.stats["actions"]["min"]) /
-                                     (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
-            }
         else:
-            self.stats = {"actions": {"min": 0.0, "max": 1.0}}
-            self.preprocess = {"actions": lambda x: x}
+            # fallback identity
+            self.stats = {
+                "actions": {"min": 0.0, "max": 1.0},
+                "features": {"min": 0.0, "max": 1.0}
+            }
+
+        # --- normalize all features and actions upfront ---
+        self.normalized_features = []
+        self.normalized_actions = []
+
+        for obs in self.observations:
+            # features: arm + ruka
+            feat = np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0).astype(np.float32)
+            feat = 2 * (feat - self.stats["features"]["min"]) / \
+                   (self.stats["features"]["max"] - self.stats["features"]["min"] + 1e-5) - 1
+            self.normalized_features.append(feat)
+
+            # actions: commanded arm + ruka
+            act = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0).astype(np.float32)
+            act = 2 * (act - self.stats["actions"]["min"]) / \
+                  (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
+            self.normalized_actions.append(act)
+
+        self.normalized_features = np.stack(self.normalized_features, axis=0)
+        self.normalized_actions = np.stack(self.normalized_actions, axis=0)
 
     def _sample(self):
         idx = np.random.randint(0, self._num_samples)
-        obs = self.observations[idx]
 
-        # Concatenate proprioceptive features (arm + ruka)
-        features = np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0).astype(np.float32)
-        # normalize features using the same min/max as actions
-        features = 2 * (features - self.stats["actions"]["min"]) / (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
+        # take already normalized data
+        features = self.normalized_features[idx]
+        actions = self.normalized_actions[idx]
 
-        # Concatenate commanded actions and normalize
-        actions = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0).astype(np.float32)
-        actions = self.preprocess["actions"](actions)
-
-        # Build Libero-style features: (history_len, max_state_dim)
+        # build Libero-style features: (history_len, max_state_dim)
         feat = np.zeros((self.history_len, self.__max_state_dim), dtype=np.float32)
         feat[0, :features.shape[0]] = features
 
-        # Build Libero-style actions: (history_len, action_repeat, action_dim)
+        # build Libero-style actions: (history_len, action_repeat, action_dim)
         if self.temporal_agg:
             sampled_actions = np.tile(actions.reshape(1, 1, -1),
                                       (self.history_len, self.action_repeat, 1)).astype(np.float32)
