@@ -15,9 +15,9 @@ action_repeat: 1
 num_eval_episodes: 1
 discount: 0.99
 
-num_train_steps:  5000 #600000 
+num_train_steps:  5100 #600000 
 log_every_steps: 1000
-save_every_steps: 2500 #200000
+save_every_steps: 5000 #200000
 eval_every_steps: 5000 # 200000  
 
 task_make_fn:
