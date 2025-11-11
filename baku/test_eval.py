@@ -33,7 +33,7 @@ def main(cfg: DictConfig):
 
     # Load trained BC snapshot
     bc_snapshot_path = Path(
-        "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.10_train/deterministic/232050/snapshot/9000.pt"
+        "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.11_train/deterministic/001059/snapshot/4000.pt"
     )
     workspace.load_snapshot({"bc": bc_snapshot_path})
     workspace.agent.train(False)  # set agent to eval mode
