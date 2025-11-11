@@ -1,6 +1,6 @@
 import numpy as np
 import pickle
-pkl_file = "/home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/data/processed_data_pkl/demo_task.pkl"
+pkl_file = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
 with open(pkl_file, "rb") as f:
     data = pickle.load(f)
 
