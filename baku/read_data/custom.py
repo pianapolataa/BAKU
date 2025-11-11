@@ -75,39 +75,27 @@ class CustomTeleopBCDataset(IterableDataset):
         idx = np.random.randint(0, self._num_samples)
         obs = self.observations[idx]
 
-        # features = concatenated proprio (arm + ruka)
+        # Concatenate proprioceptive features (arm + ruka)
         features = np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0).astype(np.float32)
 
-        # action = concatenated commanded states, then normalize
-        actions = np.concatenate(
-            [obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0
-        ).astype(np.float32)
+        # Concatenate commanded actions and normalize
+        actions = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0).astype(np.float32)
         actions = self.preprocess["actions"](actions)
-
-        # # pad action vector to dataset max action dim so flattened size matches agent
-        # d = actions.shape[0]
-        # if d < self.__max_action_dim:
-        #     padded = np.zeros((self.__max_action_dim,), dtype=actions.dtype)
-        #     padded[:d] = actions
-        #     actions = padded
 
         # Build Libero-style features: (history_len, max_state_dim)
         feat = np.zeros((self.history_len, self.__max_state_dim), dtype=np.float32)
-        state_dim = features.shape[0]
-        feat[0, :state_dim] = features
+        feat[0, :features.shape[0]] = features
 
         # Build Libero-style actions
+        # Always produce 4D: (history_len, action_repeat, action_dim)
         if self.temporal_agg:
-            # (history_len, action_repeat, action_dim)
-            act = np.tile(actions.reshape(1, -1), (self.history_len, self.action_repeat, 1))
-            sampled_actions = act.astype(np.float32)
+            sampled_actions = np.tile(actions.reshape(1, 1, -1), (self.history_len, self.action_repeat, 1)).astype(np.float32)
         else:
-            # (history_len, action_dim)
-            sampled_actions = np.tile(actions.reshape(1, -1), (self.history_len, 1)).astype(np.float32)
+            # still 4D with action_repeat=1
+            sampled_actions = np.tile(actions.reshape(1, 1, -1), (self.history_len, 1, 1)).astype(np.float32)
 
         return {
-            # keep a dummy pixel tensor for compatibility with code expecting pixels
-            "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),
+            "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),  # dummy pixels
             "features": feat,
             "actions": sampled_actions,
             "task_emb": self.task_emb.astype(np.float32),
