@@ -811,13 +811,13 @@ class BCAgent:
             # actor loss
             stddev = utils.schedule(self.stddev_schedule, step)
             
-            # DEBUG: check min/max of features and actions
-            print("=== Batch Debug ===")
-            print("features min/max:", features.min().item(), features.max().item())
-            print("actions min/max:", action.min().item(), action.max().item())
-            print("features mean/std:", features.mean().item(), features.std().item())
-            print("actions mean/std:", action.mean().item(), action.std().item())
-            print("===================")
+            # # DEBUG: check min/max of features and actions
+            # print("=== Batch Debug ===")
+            # print("features min/max:", features.min().item(), features.max().item())
+            # print("actions min/max:", action.min().item(), action.max().item())
+            # print("features mean/std:", features.mean().item(), features.std().item())
+            # print("actions mean/std:", action.mean().item(), action.std().item())
+            # print("===================")
 
             _, actor_loss = self.actor(
                 features, num_prompt_feats, stddev, action, **kwargs

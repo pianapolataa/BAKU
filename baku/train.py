@@ -51,16 +51,16 @@ class WorkspaceIL:
         self.expert_replay_iter = iter(self.expert_replay_loader)
         self.stats = self.expert_replay_loader.dataset.stats
 
-        # --- DEBUG: check dataset ---
-        sample = next(iter(dataset_iterable))  # get one sample directly from dataset
-        print("=== Dataset Debug ===")
-        print("features shape:", sample["features"].shape)
-        print("features min/max:", sample["features"].min(), sample["features"].max())
-        print("actions shape:", sample["actions"].shape)
-        print("actions min/max:", sample["actions"].min(), sample["actions"].max())
-        print("task_emb shape:", sample["task_emb"].shape)
-        print("sample actions", sample["actions"][0,0,:])
-        print("====================")
+        # # --- DEBUG: check dataset ---
+        # sample = next(iter(dataset_iterable))  # get one sample directly from dataset
+        # print("=== Dataset Debug ===")
+        # print("features shape:", sample["features"].shape)
+        # print("features min/max:", sample["features"].min(), sample["features"].max())
+        # print("actions shape:", sample["actions"].shape)
+        # print("actions min/max:", sample["actions"].min(), sample["actions"].max())
+        # print("task_emb shape:", sample["task_emb"].shape)
+        # print("sample actions", sample["actions"][0,0,:])
+        # print("====================")
 
         # create logger
         self.logger = Logger(self.work_dir, use_tb=self.cfg.use_tb)
@@ -212,14 +212,14 @@ class WorkspaceIL:
                 self.eval()
 
             batch = next(self.expert_replay_iter)
-            print("=== Batch Debug: After dataset fetch ===")
-            print("actions min/max:", batch["actions"].min(), batch["actions"].max())
-            print("features min/max:", batch["features"].min(), batch["features"].max())
+            # print("=== Batch Debug: After dataset fetch ===")
+            # print("actions min/max:", batch["actions"].min(), batch["actions"].max())
+            # print("features min/max:", batch["features"].min(), batch["features"].max())
 
             data = utils.to_torch(batch, self.device)
-            print("=== Batch Debug: After to_torch ===")
-            print("actions min/max:", data["actions"].min(), data["actions"].max())
-            print("features min/max:", data["features"].min(), data["features"].max())
+            # print("=== Batch Debug: After to_torch ===")
+            # print("actions min/max:", data["actions"].min(), data["actions"].max())
+            # print("features min/max:", data["features"].min(), data["features"].max())
 
             metrics = self.agent.update(iter([batch]), self.global_step)
 
