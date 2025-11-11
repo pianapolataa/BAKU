@@ -89,14 +89,6 @@ class WorkspaceIL:
             self.env[0].observation_spec(), self.env[0].action_spec(), cfg
         )
 
-
-        batch = next(self.expert_replay_iter)
-        obs = torch.tensor(batch["features"], dtype=torch.float32, device=self.device)
-        with torch.no_grad():
-            pred = self.agent(obs) if callable(self.agent) else self.agent.policy(obs)
-        print("DEBUG model output stats:", pred.min().item(), pred.max().item(), pred.mean().item(), pred.std().item())
-
-
         self.envs_till_idx = self.expert_replay_loader.dataset.envs_till_idx
 
         # Discretizer for BeT
