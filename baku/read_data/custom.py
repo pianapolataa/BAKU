@@ -18,7 +18,6 @@ class CustomTeleopBCDataset(IterableDataset):
         self, pkl_file, action_repeat: int = 10, history_len: int = 1, temporal_agg: bool = True
     ):
         self.pkl_file = pkl_file
-        # match agent's expected repeat by default; can be overridden via Hydra param
         self.action_repeat = int(action_repeat)
         self.history_len = int(history_len)
         self.temporal_agg = bool(temporal_agg)
@@ -26,16 +25,16 @@ class CustomTeleopBCDataset(IterableDataset):
         with open(pkl_file, "rb") as f:
             data = pickle.load(f)
 
-        # raw observations (each obs is a single-step dict in this dataset)
         self.observations = data["observations"]
-        self.task_emb = np.asarray(data.get("task_emb", data.get("task_embedding", np.zeros(1))), dtype=np.float32)
+        self.task_emb = np.asarray(
+            data.get("task_emb", data.get("task_embedding", np.zeros(1))), dtype=np.float32
+        )
 
         self.min_arm = np.array(data.get("min_arm", np.zeros(7)), dtype=np.float32)
         self.max_arm = np.array(data.get("max_arm", np.ones(7)), dtype=np.float32)
         self.min_ruka = np.array(data.get("min_ruka", np.zeros(16)), dtype=np.float32)
         self.max_ruka = np.array(data.get("max_ruka", np.ones(16)), dtype=np.float32)
 
-        # compute max state/action dimensions
         self.__max_state_dim = max(
             len(obs["arm_states"]) + len(obs["ruka_states"]) for obs in self.observations
         )
@@ -46,7 +45,7 @@ class CustomTeleopBCDataset(IterableDataset):
 
         self._num_samples = len(self.observations)
 
-        # raw stacked actions (keep unchanged for rollouts / discretize)
+        # raw stacked actions
         self.actions = np.stack(
             [
                 np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]])
@@ -55,7 +54,7 @@ class CustomTeleopBCDataset(IterableDataset):
             axis=0,
         ).astype(np.float32)
 
-        # action normalization using PKL min/max if present in file, else identity
+        # normalization using PKL min/max if present, else identity
         if "min_arm" in data and "min_ruka" in data and "max_arm" in data and "max_ruka" in data:
             self.stats = {
                 "actions": {
@@ -64,10 +63,10 @@ class CustomTeleopBCDataset(IterableDataset):
                 }
             }
             self.preprocess = {
-                "actions": lambda x: 2 * (x - self.stats["actions"]["min"]) / (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
+                "actions": lambda x: 2 * (x - self.stats["actions"]["min"]) /
+                                     (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
             }
         else:
-            # fallback: assume already normalized
             self.stats = {"actions": {"min": 0.0, "max": 1.0}}
             self.preprocess = {"actions": lambda x: x}
 
@@ -77,6 +76,8 @@ class CustomTeleopBCDataset(IterableDataset):
 
         # Concatenate proprioceptive features (arm + ruka)
         features = np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0).astype(np.float32)
+        # normalize features using the same min/max as actions
+        features = 2 * (features - self.stats["actions"]["min"]) / (self.stats["actions"]["max"] - self.stats["actions"]["min"] + 1e-5) - 1
 
         # Concatenate commanded actions and normalize
         actions = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0).astype(np.float32)
@@ -86,16 +87,16 @@ class CustomTeleopBCDataset(IterableDataset):
         feat = np.zeros((self.history_len, self.__max_state_dim), dtype=np.float32)
         feat[0, :features.shape[0]] = features
 
-        # Build Libero-style actions
-        # Always produce 4D: (history_len, action_repeat, action_dim)
+        # Build Libero-style actions: (history_len, action_repeat, action_dim)
         if self.temporal_agg:
-            sampled_actions = np.tile(actions.reshape(1, 1, -1), (self.history_len, self.action_repeat, 1)).astype(np.float32)
+            sampled_actions = np.tile(actions.reshape(1, 1, -1),
+                                      (self.history_len, self.action_repeat, 1)).astype(np.float32)
         else:
-            # still 4D with action_repeat=1
-            sampled_actions = np.tile(actions.reshape(1, 1, -1), (self.history_len, 1, 1)).astype(np.float32)
+            sampled_actions = np.tile(actions.reshape(1, 1, -1),
+                                      (self.history_len, 1, 1)).astype(np.float32)
 
         return {
-            "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),  # dummy pixels
+            "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),
             "features": feat,
             "actions": sampled_actions,
             "task_emb": self.task_emb.astype(np.float32),
@@ -119,12 +120,9 @@ class CustomTeleopBCDataset(IterableDataset):
 
     @property
     def envs_till_idx(self):
-        # single "environment"
         return 1
 
     def sample_test(self, env_idx, step=None):
-        # Keep simple: return prompt placeholders similar to Libero features branch
-        # This dataset is single-step per entry, so we return None prompts unless explicit step logic needed.
         prompt_features = None
         prompt_actions = None
         return {
