@@ -51,6 +51,17 @@ class WorkspaceIL:
         self.expert_replay_iter = iter(self.expert_replay_loader)
         self.stats = self.expert_replay_loader.dataset.stats
 
+        # --- DEBUG: check dataset ---
+        sample = next(iter(dataset_iterable))  # get one sample directly from dataset
+        print("=== Dataset Debug ===")
+        print("features shape:", sample["features"].shape)
+        print("features min/max:", sample["features"].min(), sample["features"].max())
+        print("actions shape:", sample["actions"].shape)
+        print("actions min/max:", sample["actions"].min(), sample["actions"].max())
+        print("task_emb shape:", sample["task_emb"].shape)
+        print("sample actions first 5:", sample["actions"][0,0,:5])
+        print("====================")
+
         # create logger
         self.logger = Logger(self.work_dir, use_tb=self.cfg.use_tb)
         # create envs
