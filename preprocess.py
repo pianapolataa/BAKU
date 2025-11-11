@@ -127,4 +127,5 @@ save_file = SAVE_PATH / f"{TASK_NAME}.pkl"
 with open(save_file, "wb") as f:
     pickle.dump(data, f)
 
+print(len(observations))
 print(f"Saved processed data (with timestamps) to {save_file}")
