@@ -21,7 +21,7 @@ suite_hidden_dim: 256
 obs_type: "pixels" # pixels, features
 num_demos_per_task: 1
 encoder_type: 'resnet' # base, resnet
-policy_type: 'gpt' # mlp, gpt
+policy_type: 'mlp' # mlp, gpt
 policy_head: deterministic # deterministic, gmm, bet, diffusion, vqbet
 use_proprio: true
 use_language: false
