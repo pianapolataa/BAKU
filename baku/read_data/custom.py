@@ -76,6 +76,8 @@ class CustomTeleopBCDataset(IterableDataset):
 
         # Concatenate proprioceptive features (arm + ruka) + actions
         features = np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0).astype(np.float32)
+        feat = np.zeros((self.history_len, self.__max_state_dim), dtype=np.float32)
+        feat[0, :features.shape[0]] = features
         actions = np.concatenate([obs["commanded_arm_states"], obs["commanded_ruka_states"]], axis=0).astype(np.float32)
 
         if self.temporal_agg:
@@ -87,7 +89,7 @@ class CustomTeleopBCDataset(IterableDataset):
 
         return {
             "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),
-            "features": features,
+            "features": feat,
             "actions": sampled_actions,
             "task_emb": self.task_emb.astype(np.float32),
         }
