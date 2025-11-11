@@ -97,6 +97,9 @@ min_arm_command = np.min(arm_stack_command, axis=0)
 max_ruka_command = np.max(hand_stack_command, axis=0)
 min_ruka_command = np.min(hand_stack_command, axis=0)
 
+print(max_ruka_command)
+print(min_ruka_command)
+
 # ----------------------------
 # TASK EMBEDDING (dummy)
 # ----------------------------
