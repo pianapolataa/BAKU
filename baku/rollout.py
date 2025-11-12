@@ -116,6 +116,8 @@ class AgentRollout:
                 # 1. Get current arm + hand states
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
+                print(arm_state)
+                break
 
                 # 2. Construct agent observation
                 obs = {
