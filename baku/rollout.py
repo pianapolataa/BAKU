@@ -102,6 +102,7 @@ class AgentRollout:
         """Query current arm state from Franka."""
         self.arm_socket.send(b"get_state")
         raw_state = pickle.loads(self.arm_socket.recv())
+        # Concatenate pos+quat to match agent input
         arm_state = np.concatenate([raw_state.pos, raw_state.quat]).astype(np.float32)
         return arm_state
 
@@ -116,14 +117,14 @@ class AgentRollout:
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
 
-                # 2. Construct observation
+                # 2. Construct agent observation
                 obs = {
                     "features": np.concatenate([arm_state, ruka_state]).astype(np.float32),
                     "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
 
-                # 3. Predict action
+                # 3. Predict next action
                 with torch.no_grad():
                     action = self.workspace.agent.act(
                         obs,
@@ -140,7 +141,7 @@ class AgentRollout:
                 arm_action = action[:7]  # pos(3) + quat(4)
                 hand_action = action[7:]
 
-                # 5. Send arm command (absolute Cartesian)
+                # 5. Send arm command directly
                 franka_action = FrankaAction(
                     pos=arm_action[:3],
                     quat=arm_action[3:7],
@@ -151,7 +152,7 @@ class AgentRollout:
                 self.arm_socket.send(pickle.dumps(franka_action, protocol=-1))
                 _ = self.arm_socket.recv()
 
-                # 6. Send hand command
+                # 6. Send hand command directly
                 move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action, hand=self.hand, traj_len=25)
                 self.curr_hand_pos = self.hand.read_pos()
 
@@ -165,7 +166,7 @@ class AgentRollout:
                         "hand_action": hand_action,
                     })
 
-                # Maintain frequency
+                # Maintain loop frequency
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
                 time.sleep(max(0, next_time - elapsed))
