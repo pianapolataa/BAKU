@@ -147,7 +147,7 @@ class AgentRollout:
                 # 4. Split into arm + hand commands
                 arm_action = action[:7]  # pos(3) + quat(4)
                 hand_action = action[7:]
-                print(arm_action)
+                print(hand_action)
                 break
 
                 # 5. Send arm command directly
