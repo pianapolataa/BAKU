@@ -98,7 +98,7 @@ class AgentRollout:
 
     def get_arm_state(self):
         """Query current arm state from the Franka controller."""
-        self.arm_socket.send(b"GET_STATE")
+        self.arm_socket.send(b"get_state")
         raw_state = pickle.loads(self.arm_socket.recv())
         return raw_state  # expected to include 'arm_states'
 
