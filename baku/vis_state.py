@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 import pickle
+import torch
 import numpy as np
-import matplotlib.pyplot as plt
 from pathlib import Path
+import hydra
+from omegaconf import DictConfig
+from train import WorkspaceIL
+from suite.custom import task_make_fn
+import matplotlib.pyplot as plt
 
 
-def main():
+@hydra.main(config_path="cfgs", config_name="config")
+def main(cfg: DictConfig):
     # -----------------------------
     # 1. Load processed demo PKL
     # -----------------------------
@@ -16,38 +22,103 @@ def main():
     print(f"Loaded {len(demo_obs)} demo steps.")
 
     # -----------------------------
-    # 2. Select demo index
+    # 2. Create environment via suite
     # -----------------------------
-    idx = 3  # which demo (observation) index to visualize
-    if idx >= len(demo_obs):
-        raise IndexError(f"Demo index {idx} is out of range (num demos: {len(demo_obs)})")
-
-    obs_dict = demo_obs[idx]
+    envs, _ = task_make_fn(demo_data)
+    env = envs[0]
 
     # -----------------------------
-    # 3. Extract arm + ruka states
+    # 3. Setup Workspace & Agent
     # -----------------------------
-    arm_states = np.array(obs_dict["arm_states"], dtype=np.float32)
-    ruka_states = np.array(obs_dict["ruka_states"], dtype=np.float32)
-    combined_states = np.concatenate([arm_states, ruka_states])
+    workspace = WorkspaceIL(cfg)
+    workspace.env = [env]
 
-    print(f"Arm state dim: {arm_states.shape[0]}, Ruka state dim: {ruka_states.shape[0]}")
-    print(f"Combined state shape: {combined_states.shape}")
+    # Load trained BC snapshot
+    bc_snapshot_path = Path(
+        "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.11_train/deterministic/141305/snapshot/5000.pt"
+    )
+    workspace.load_snapshot({"bc": bc_snapshot_path})
+    workspace.agent.train(False)
 
     # -----------------------------
-    # 4. Plot each state dimension
+    # 4. Build normalization stats
     # -----------------------------
-    plt.figure(figsize=(10, 5))
-    plt.plot(combined_states, marker="o", linewidth=1.5)
-    plt.title(f"Combined Arm + Ruka States (Demo Index {idx})")
-    plt.xlabel("State Dimension")
+    norm_stats = {
+        "features": {
+            "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"]]),
+            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]]),
+        },
+        "actions": {
+            "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"]]),
+            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]]),
+        },
+    }
+
+    # -----------------------------
+    # 5. Rollout and collect raw values
+    # -----------------------------
+    action_idx = 3  # the action index to visualize
+    state_idx = 3   # the state index to visualize
+    agent_values, demo_values = [], []
+    state_values = []
+    total_mse = 0.0
+
+    for step_idx, obs_dict in enumerate(demo_obs):
+        # collect state value at index 3
+        combined_state = np.concatenate(
+            [obs_dict["arm_states"], obs_dict["ruka_states"]]
+        ).astype(np.float32)
+        state_values.append(combined_state[state_idx])
+
+        agent_obs = {
+            "features": combined_state,
+            "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+            "task_emb": np.asarray(demo_data["task_emb"], dtype=np.float32),
+        }
+
+        with torch.no_grad():
+            agent_action_raw = workspace.agent.act(
+                agent_obs,
+                prompt=None,
+                norm_stats=norm_stats,
+                step=step_idx,
+                global_step=workspace.global_step,
+                eval_mode=True,
+            )
+
+        if isinstance(agent_action_raw, torch.Tensor):
+            agent_action_raw = agent_action_raw.cpu().numpy()
+
+        demo_action_raw = np.concatenate(
+            [obs_dict["commanded_arm_states"], obs_dict["commanded_ruka_states"]]
+        ).astype(np.float32)
+
+        # record raw values for the chosen action index
+        agent_values.append(agent_action_raw[action_idx])
+        demo_values.append(demo_action_raw[action_idx])
+
+        # accumulate MSE for sanity check
+        diff = agent_action_raw - demo_action_raw
+        total_mse += (diff**2).mean()
+
+    mean_mse = total_mse / len(demo_obs)
+    print(f"Demo rollout finished. Steps: {len(demo_obs)}, Mean raw action MSE: {mean_mse:.8f}")
+
+    steps = np.arange(len(demo_obs))
+
+    # -----------------------------
+    # 7. Plot raw state values
+    # -----------------------------
+    plt.figure(figsize=(9, 4))
+    plt.plot(steps, state_values, label=f"State[{state_idx}]", color="green")
+    plt.title(f"State Index {state_idx}: Raw Feature Value Over Time")
+    plt.xlabel("Step")
     plt.ylabel("Raw State Value")
-    plt.grid(True)
+    plt.legend()
     plt.tight_layout()
-
-    save_path = f"/home_shared/grail_sissi/BAKU/demo_index{idx}_states.png"
-    plt.savefig(save_path)
-    print(f"Saved state plot to {save_path}")
+    save_path_state = f"/home_shared/grail_sissi/BAKU/state_index{state_idx}_over_time.png"
+    plt.savefig(save_path_state)
+    print(f"Saved state over time plot to {save_path_state}")
 
 
 if __name__ == "__main__":
