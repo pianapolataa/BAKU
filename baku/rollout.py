@@ -112,7 +112,10 @@ class AgentRollout:
         t0 = time.time()
 
         try:
+            cnt = 0
             while time.time() - t0 < duration_s:
+                cnt += 1
+                if (cnt == 2): break
                 # 1. Get current arm + hand states
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
@@ -179,8 +182,6 @@ class AgentRollout:
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
                 time.sleep(max(0, next_time - elapsed))
-
-                break
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
