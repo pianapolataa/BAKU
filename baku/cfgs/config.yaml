@@ -6,7 +6,7 @@ defaults:
   - override hydra/launcher: submitit_local
 
 # Root Dir
-root_dir: /home_shared/grail_sissi/vr-hand-tracking/Franka-Teach/BAKU
+root_dir: /home_shared/grail_sissi/BAKU
 
 # misc
 seed: 2
