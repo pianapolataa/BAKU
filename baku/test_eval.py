@@ -201,6 +201,8 @@ def main(cfg: DictConfig):
             "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
             "task_emb": np.asarray(demo_data["task_emb"], dtype=np.float32),
         }
+        print(obs_dict["arm_states"])
+        print(obs_dict["ruka_states"])
 
         with torch.no_grad():
             agent_action_raw = workspace.agent.act(
