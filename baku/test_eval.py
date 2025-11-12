@@ -57,7 +57,7 @@ def main(cfg: DictConfig):
     # -----------------------------
     # 5. Rollout and collect raw values
     # -----------------------------
-    idx = 6  # the action index to visualize
+    idx = 2  # the action index to visualize
     agent_values, demo_values = [], []
     total_mse = 0.0
 
