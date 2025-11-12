@@ -117,11 +117,12 @@ class AgentRollout:
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
 
+                # feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
+                # feat = (feat - self.norm_stats["features"]["min"]) / (
+                #     self.norm_stats["features"]["max"] - self.norm_stats["features"]["min"] + 1e-5
+                # )
+                # feat = np.clip(feat, 0.0, 1.0)
                 feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
-                feat = (feat - self.norm_stats["features"]["min"]) / (
-                    self.norm_stats["features"]["max"] - self.norm_stats["features"]["min"] + 1e-5
-                )
-                feat = np.clip(feat, 0.0, 1.0)
 
                 # 2. Construct agent observation
                 obs = {
@@ -148,7 +149,7 @@ class AgentRollout:
                 hand_action = action[7:]
                 print(arm_action)
                 print(hand_action)
-                # break
+                break
 
                 # 5. Send arm command directly
                 franka_action = FrankaAction(
