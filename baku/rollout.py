@@ -149,7 +149,6 @@ class AgentRollout:
                 hand_action = action[7:]
                 print(arm_action)
                 print(hand_action)
-                break
 
                 # 5. Send arm command directly
                 franka_action = FrankaAction(
@@ -180,6 +179,8 @@ class AgentRollout:
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
                 time.sleep(max(0, next_time - elapsed))
+
+                break
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
