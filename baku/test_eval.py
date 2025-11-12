@@ -221,6 +221,9 @@ def main(cfg: DictConfig):
         pred_arm = agent_action_raw[:7]
         pred_hand = agent_action_raw[7:]
 
+        print(pred_arm)
+        print(pred_hand)
+
         predicted_arm_states.append(pred_arm)
         predicted_hand_states.append(pred_hand)
 
