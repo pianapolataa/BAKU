@@ -98,7 +98,8 @@ class AgentRollout:
         """Query current arm state from Franka."""
         self.arm_socket.send(b"get_state")
         raw_state = pickle.loads(self.arm_socket.recv())
-        return raw_state["arm_states"]
+        arm_state = np.concatenate([raw_state.pos, raw_state.quat]).astype(np.float32)
+        return arm_state
 
     def run(self, duration_s: float = 60.0, freq: float = 50.0):
         print("Starting live rollout...")
