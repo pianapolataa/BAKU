@@ -19,8 +19,8 @@ from ruka_hand.control.hand import Hand
 from ruka_hand.utils.trajectory import move_to_pos
 
 # --- Agent imports ---
-from baku.train import WorkspaceIL
-from baku.suite.custom import task_make_fn
+from train import WorkspaceIL
+from suite.custom import task_make_fn
 
 
 class AgentRollout:
