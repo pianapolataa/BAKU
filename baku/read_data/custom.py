@@ -59,7 +59,7 @@ class CustomTeleopBCDataset(IterableDataset):
         self.normalized_features = []
         self.normalized_actions = []
 
-        eps = 1e-5  # avoid divide-by-zero
+        eps = 1e-8  # avoid divide-by-zero
 
         for obs in self.observations:
             # features: arm + ruka
