@@ -53,6 +53,10 @@ class AgentRollout:
             "features": {
                 "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"]]),
                 "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]]),
+            },
+            "actions": {
+                "min": np.concatenate([demo_data["min_arm_commanded"], demo_data["min_ruka_commanded"]]),
+                "max": np.concatenate([demo_data["max_arm_commanded"], demo_data["max_ruka_commanded"]]),
             }
         }
 
