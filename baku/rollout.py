@@ -116,7 +116,6 @@ class AgentRollout:
                 # 1. Get current arm + hand states
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
-                print(arm_state)
 
                 feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
                 feat = (feat - self.norm_stats["features"]["min"]) / (
@@ -147,6 +146,7 @@ class AgentRollout:
                 # 4. Split into arm + hand commands
                 arm_action = action[:7]  # pos(3) + quat(4)
                 hand_action = action[7:]
+                print(arm_action)
                 print(hand_action)
                 # break
 
