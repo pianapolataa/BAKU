@@ -7,7 +7,7 @@ from tqdm import tqdm
 # ----------------------------
 # CONFIGURATION
 # ----------------------------
-DATA_FOLDER = Path("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/data/demonstration_9") 
+DATA_FOLDER = Path("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/data/demonstration_8") 
 CAM_INDEX = 0                                    # index of the camera you want to use
 IMG_SIZE = (128, 128)                            # resize images to this
 SAVE_PATH = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl")
