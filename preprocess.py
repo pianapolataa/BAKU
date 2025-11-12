@@ -77,6 +77,31 @@ for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM
     timestamps.append(float(t))
 
 # ----------------------------
+# FIX QUATERNION SIGN FLIPS
+# ----------------------------
+print("Checking for quaternion sign flips...")
+
+def fix_quaternion_sequence(observations, key, quat_start_idx=3, quat_end_idx=7):
+    """
+    Ensures quaternion continuity by flipping signs if consecutive quats have negative dot product.
+    """
+    num_flips = 0
+    for i in range(1, len(observations)):
+        q_prev = observations[i - 1][key][quat_start_idx:quat_end_idx]
+        q_curr = observations[i][key][quat_start_idx:quat_end_idx]
+        if np.dot(q_prev, q_curr) < 0:  # opposite hemisphere
+            observations[i][key][quat_start_idx:quat_end_idx] *= -1
+            num_flips += 1
+    return num_flips
+
+num_arm_flips = fix_quaternion_sequence(observations, "arm_states")
+num_arm_cmd_flips = fix_quaternion_sequence(observations, "commanded_arm_states")
+
+print(f"Fixed {num_arm_flips} quaternion sign flips in arm_states.")
+print(f"Fixed {num_arm_cmd_flips} quaternion sign flips in commanded_arm_states.")
+
+
+# ----------------------------
 # COMPUTE MIN/MAX BOUNDS
 # ----------------------------
 print("Computing min/max bounds...")
