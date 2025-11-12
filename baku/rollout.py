@@ -140,6 +140,8 @@ class AgentRollout:
                 hand_action = action[7:]  # rest are hand joints
 
                 # 5. Send arm command
+                print(arm_action)
+                print(hand_action)
                 franka_action = FrankaAction(
                     pos=arm_action[:3],
                     quat=arm_action[3:7],
