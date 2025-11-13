@@ -125,10 +125,10 @@ class AgentRollout:
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
 
-                demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
-                # override arm and hand states with demo
-                arm_state = demo_obs["arm_states"].copy()
-                ruka_state = demo_obs["ruka_states"].copy()
+                # demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
+                # # override arm and hand states with demo
+                # arm_state = demo_obs["arm_states"].copy()
+                # ruka_state = demo_obs["ruka_states"].copy()
                 ##
 
                 feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
@@ -218,7 +218,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path =  "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.13_train/deterministic/163603/snapshot/56000.pt"
+    snapshot_path =  "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.13_train/deterministic/163603/snapshot/59000.pt"
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
