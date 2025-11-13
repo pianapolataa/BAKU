@@ -111,20 +111,17 @@ class AgentRollout:
         dt = 1.0 / freq
         t0 = time.time()
 
+        # --- Reference quaternion from demo ---
+        ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
+
         try:
             cnt = 0
             while time.time() - t0 < duration_s:
                 cnt += 1
-                # if (cnt == 20): break
                 # 1. Get current arm + hand states
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
 
-                # feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
-                # feat = (feat - self.norm_stats["features"]["min"]) / (
-                #     self.norm_stats["features"]["max"] - self.norm_stats["features"]["min"] + 1e-5
-                # )
-                # feat = np.clip(feat, 0.0, 1.0)
                 feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
 
                 # 2. Construct agent observation
@@ -150,8 +147,15 @@ class AgentRollout:
                 # 4. Split into arm + hand commands
                 arm_action = action[:7]  # pos(3) + quat(4)
                 hand_action = action[7:]
-                print(arm_action)
-                print(hand_action)
+
+                # --- Quaternion sign consistency check ---
+                quat = arm_action[3:7]
+                if np.dot(ref_quat, quat) < 0:
+                    quat *= -1.0
+                    arm_action[3:7] = quat
+
+                print("Arm action (quat adjusted):", arm_action)
+                print("Hand action:", hand_action)
 
                 # 5. Send arm command directly
                 franka_action = FrankaAction(
