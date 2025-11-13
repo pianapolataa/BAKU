@@ -115,7 +115,7 @@ class AgentRollout:
             cnt = 0
             while time.time() - t0 < duration_s:
                 cnt += 1
-                if (cnt == 10): break
+                if (cnt == 20): break
                 # 1. Get current arm + hand states
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
