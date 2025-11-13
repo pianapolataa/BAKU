@@ -118,7 +118,7 @@ class AgentRollout:
             cnt = 0
             while time.time() - t0 < duration_s:
                 cnt += 1
-                if (cnt == 2): break
+                # if (cnt == 2): break
                 # 1. Get current arm + hand states
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
@@ -210,7 +210,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path =  "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.13_train/deterministic/163603/snapshot/31000.pt"
+    snapshot_path =  "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.13_train/deterministic/163603/snapshot/34000.pt"
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
