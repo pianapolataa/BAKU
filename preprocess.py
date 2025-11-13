@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import pickle
 import cv2
 import numpy as np
@@ -42,6 +43,8 @@ all_timestamps = []
 
 reference_quat = None  # from first frame of first demo
 reference_cmd_quat = None
+
+fixed_counts = {"global_flips": 0, "continuity_flips": 0}
 
 # ----------------------------
 # PROCESS EACH DEMO
@@ -94,14 +97,36 @@ for d_idx, DEMO in enumerate(demo_dirs):
             reference_cmd_quat = extract_quat(cmd_state).copy()
             print("Set global reference quaternions")
 
-        # Apply sign flip to match global reference
-        arm_quat = extract_quat(arm_state)
-        cmd_quat = extract_quat(cmd_state)
+        # Apply sign flip to match global reference hemisphere
+        arm_quat = extract_quat(arm_state).copy()
+        cmd_quat = extract_quat(cmd_state).copy()
 
-        arm_quat = flip_to_reference(arm_quat, reference_quat)
-        cmd_quat = flip_to_reference(cmd_quat, reference_cmd_quat)
+        # global hemisphere alignment
+        arm_quat_aligned = flip_to_reference(arm_quat, reference_quat)
+        if np.dot(arm_quat_aligned, arm_quat) < 0:
+            fixed_counts["global_flips"] += 1
+        arm_quat = arm_quat_aligned
 
-        # Replace flipped quat back
+        cmd_quat_aligned = flip_to_reference(cmd_quat, reference_cmd_quat)
+        if np.dot(cmd_quat_aligned, cmd_quat) < 0:
+            fixed_counts["global_flips"] += 1
+        cmd_quat = cmd_quat_aligned
+
+        # --- Continuity with previously appended frame (global continuity)
+        # If we already have frames in all_observations, ensure this frame is continuous
+        if len(all_observations) > 0:
+            prev_arm_quat = all_observations[-1]["arm_states"][3:7]
+            prev_cmd_quat = all_observations[-1]["commanded_arm_states"][3:7]
+
+            if np.dot(prev_arm_quat, arm_quat) < 0:
+                arm_quat = -arm_quat
+                fixed_counts["continuity_flips"] += 1
+
+            if np.dot(prev_cmd_quat, cmd_quat) < 0:
+                cmd_quat = -cmd_quat
+                fixed_counts["continuity_flips"] += 1
+
+        # Replace adjusted quats back
         arm_state[3:7] = arm_quat
         cmd_state[3:7] = cmd_quat
 
@@ -146,3 +171,5 @@ with open(save_file, "wb") as f:
     pickle.dump(data, f)
 
 print(f"\nSaved {len(all_observations)} merged frames to {save_file}")
+print(f"Global hemisphere flips applied: {fixed_counts['global_flips']}")
+print(f"Continuity flips applied: {fixed_counts['continuity_flips']}")
