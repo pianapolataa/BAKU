@@ -9,6 +9,13 @@ from suite.custom import task_make_fn
 import matplotlib.pyplot as plt
 
 
+def align_quaternion_signs(quat, ref_quat):
+    """Ensure quaternion has same hemisphere as reference."""
+    if np.dot(quat, ref_quat) < 0:
+        quat = -quat
+    return quat
+
+
 @hydra.main(config_path="cfgs", config_name="config")
 def main(cfg: DictConfig):
     # -----------------------------
@@ -34,7 +41,7 @@ def main(cfg: DictConfig):
 
     # Load trained BC snapshot
     bc_snapshot_path = Path(
-       "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.12_train/deterministic/185004/snapshot/41000.pt"
+        "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.12_train/deterministic/185004/snapshot/41000.pt"
     )
     workspace.load_snapshot({"bc": bc_snapshot_path})
     workspace.agent.train(False)
@@ -54,7 +61,13 @@ def main(cfg: DictConfig):
     }
 
     # -----------------------------
-    # 5. Rollout and collect all action dims
+    # 5. Prepare quaternion reference
+    # -----------------------------
+    ref_quat = demo_obs[0]["arm_states"][3:7].copy()
+    ref_quat_cmd = demo_obs[0]["commanded_arm_states"][3:7].copy()
+
+    # -----------------------------
+    # 6. Rollout and collect all action dims
     # -----------------------------
     num_actions = 23
     agent_actions = []
@@ -62,8 +75,16 @@ def main(cfg: DictConfig):
     total_mse = 0.0
 
     for step_idx, obs_dict in enumerate(demo_obs):
+        arm_state = obs_dict["arm_states"].copy()
+        cmd_state = obs_dict["commanded_arm_states"].copy()
+
+        # --- Quaternion sign fix ---
+        arm_state[3:7] = align_quaternion_signs(arm_state[3:7], ref_quat)
+        cmd_state[3:7] = align_quaternion_signs(cmd_state[3:7], ref_quat_cmd)
+
+        # --- Build obs and actions ---
         agent_obs = {
-            "features": np.concatenate([obs_dict["arm_states"], obs_dict["ruka_states"]]).astype(np.float32),
+            "features": np.concatenate([arm_state, obs_dict["ruka_states"]]).astype(np.float32),
             "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
             "task_emb": np.asarray(demo_data["task_emb"], dtype=np.float32),
         }
@@ -82,9 +103,10 @@ def main(cfg: DictConfig):
             agent_action_raw = agent_action_raw.cpu().numpy()
 
         demo_action_raw = np.concatenate(
-            [obs_dict["commanded_arm_states"], obs_dict["commanded_ruka_states"]]
+            [cmd_state, obs_dict["commanded_ruka_states"]]
         ).astype(np.float32)
 
+        # --- Store + compare ---
         agent_actions.append(agent_action_raw)
         demo_actions.append(demo_action_raw)
 
@@ -99,7 +121,7 @@ def main(cfg: DictConfig):
     steps = np.arange(len(demo_obs))
 
     # -----------------------------
-    # 6. Plot all 23 dimensions
+    # 7. Plot all 23 dimensions
     # -----------------------------
     rows, cols = 5, 5
     fig, axes = plt.subplots(rows, cols, figsize=(20, 16))
@@ -115,10 +137,8 @@ def main(cfg: DictConfig):
         else:
             ax.axis("off")
 
-    # Add a single legend outside subplots
     handles, labels = axes[0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper center", ncol=2, fontsize=12)
-
     fig.suptitle("Predicted vs Demo Raw Action Values", fontsize=16)
     fig.tight_layout(rect=[0, 0, 1, 0.97])
 
