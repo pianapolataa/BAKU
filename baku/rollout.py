@@ -169,7 +169,7 @@ class AgentRollout:
                 _ = self.arm_socket.recv()
 
                 # 6. Send hand command directly
-                move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action, hand=self.hand, traj_len=25)
+                move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action, hand=self.hand, traj_len=35)
                 self.curr_hand_pos = self.hand.read_pos()
 
                 # 7. Logging
@@ -209,7 +209,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path =  "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.13_train/deterministic/163603/snapshot/12000.pt"
+    snapshot_path =  "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.13_train/deterministic/163603/snapshot/17000.pt"
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
