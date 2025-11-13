@@ -112,7 +112,7 @@ class AgentRollout:
         t0 = time.time()
 
         # --- Reference quaternion from demo ---
-        ref_quat = -1 * self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
+        ref_quat = 1 * self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
 
         try:
             cnt = 0
