@@ -120,8 +120,16 @@ class AgentRollout:
                 cnt += 1
                 # if (cnt == 2): break
                 # 1. Get current arm + hand states
+
+                ##
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
+
+                demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
+                # override arm and hand states with demo
+                arm_state = demo_obs["arm_states"].copy()
+                ruka_state = demo_obs["ruka_states"].copy()
+                ##
 
                 feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
 
