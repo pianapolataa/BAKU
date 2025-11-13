@@ -7,150 +7,142 @@ from tqdm import tqdm
 # ----------------------------
 # CONFIGURATION
 # ----------------------------
-DATA_FOLDER = Path("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/data/demonstration_8") 
-CAM_INDEX = 0                                    # index of the camera you want to use
-IMG_SIZE = (128, 128)                            # resize images to this
+DATA_ROOT = Path("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/data")
+IMG_SIZE = (128, 128)
 SAVE_PATH = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl")
 SAVE_PATH.mkdir(parents=True, exist_ok=True)
-TASK_NAME = "demo_task"                          # arbitrary task name for BAKU
-NUM_FRAMES = None                                # optionally limit number of frames
+TASK_NAME = "demo_task"
 
-# ----------------------------
-# LOAD DATA
-# ----------------------------
-print("Loading PKL data...")
+def flip_to_reference(quat, ref):
+    """Flip quaternion sign to match reference hemisphere."""
+    return quat if np.dot(quat, ref) >= 0 else -quat
 
-with open(DATA_FOLDER / "states.pkl", "rb") as f:
-    arm_states = pickle.load(f)  # list of dicts: {'state': [x7,...], 'timestamp': t}
 
-with open(DATA_FOLDER / "commanded_states.pkl", "rb") as f:
-    arm_commanded_states = pickle.load(f)
-
-with open(DATA_FOLDER / "ruka_states.pkl", "rb") as f:
-    hand_states = pickle.load(f)
-
-with open(DATA_FOLDER / "ruka_commanded_states.pkl", "rb") as f:
-    hand_commanded_states = pickle.load(f)
-
-print(f"Number of arm_states: {len(arm_states)}")
-print(f"Number of commanded arm_states: {len(arm_commanded_states)}")
-print(f"Number of hand_states: {len(hand_states)}")
-print(f"Number of commanded hand_states: {len(hand_commanded_states)}")
-
-# ----------------------------
-# SYNCHRONIZE DATA (hand timestamps as reference)
-# ----------------------------
-print("Synchronizing data...")
-observations = []
-timestamps = []  # store timestamps for all synchronized frames
-
-# Extract timestamps
-arm_times = np.array([s["timestamp"] for s in arm_states])
-hand_times = np.array([s["timestamp"] for s in hand_states])
-
-# Loop over hand frames
-for i, t in enumerate(tqdm(hand_times if NUM_FRAMES is None else hand_times[:NUM_FRAMES])):
-    obs = {}
-    obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)  # dummy image
-    obs["timestamp"] = float(t)  # store timestamp for this frame
-
-    # Find closest arm frame to this hand timestamp
-    arm_idx = np.argmin(np.abs(arm_times - t))
-    time_diff = abs(arm_times[arm_idx] - t)
-
-    # Skip if timestamps differ by more than 0.05s
-    if time_diff > 0.05:
-        continue
-
-    # Extract Franka joint positions
-    arm_state = arm_states[arm_idx]['state']
-    commanded_arm_state = arm_commanded_states[arm_idx]['state']
-
-    obs["arm_states"] = np.concatenate([arm_state.pos, arm_state.quat]).astype(np.float32)
-    obs["commanded_arm_states"] = np.concatenate([commanded_arm_state.pos, commanded_arm_state.quat]).astype(np.float32)
-
-    # Hand/gripper states
-    obs["ruka_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
-    obs["commanded_ruka_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
-
-    observations.append(obs)
-    timestamps.append(float(t))
-
-# ----------------------------
-# FIX QUATERNION SIGN FLIPS
-# ----------------------------
-print("Checking for quaternion sign flips...")
-
-def fix_quaternion_sequence(observations, key, quat_start_idx=3, quat_end_idx=7):
-    """
-    Ensures quaternion continuity by flipping signs if consecutive quats have negative dot product.
-    """
-    num_flips = 0
-    for i in range(1, len(observations)):
-        q_prev = observations[i - 1][key][quat_start_idx:quat_end_idx]
-        q_curr = observations[i][key][quat_start_idx:quat_end_idx]
-        if np.dot(q_prev, q_curr) < 0:  # opposite hemisphere
-            observations[i][key][quat_start_idx:quat_end_idx] *= -1
-            num_flips += 1
-    return num_flips
-
-num_arm_flips = fix_quaternion_sequence(observations, "arm_states")
-num_arm_cmd_flips = fix_quaternion_sequence(observations, "commanded_arm_states")
-
-print(f"Fixed {num_arm_flips} quaternion sign flips in arm_states.")
-print(f"Fixed {num_arm_cmd_flips} quaternion sign flips in commanded_arm_states.")
+def extract_quat(x):
+    """Assumes 7-DoF arm: pos[0:3], quat[3:7]."""
+    return x[3:7]
 
 
 # ----------------------------
-# COMPUTE MIN/MAX BOUNDS
+# GATHER ALL DEMO FOLDERS
 # ----------------------------
-print("Computing min/max bounds...")
+demo_dirs = sorted(
+    [p for p in DATA_ROOT.iterdir() if p.is_dir() and "demonstration" in p.name]
+)
+print(f"Found {len(demo_dirs)} demos")
 
-arm_stack = np.stack([o["arm_states"] for o in observations], axis=0)
-hand_stack = np.stack([o["ruka_states"] for o in observations], axis=0)
-arm_stack_command = np.stack([o["commanded_arm_states"] for o in observations], axis=0)
-hand_stack_command = np.stack([o["commanded_ruka_states"] for o in observations], axis=0)
-
-max_arm = np.max(arm_stack, axis=0)
-min_arm = np.min(arm_stack, axis=0)
-max_ruka = np.max(hand_stack, axis=0)
-min_ruka = np.min(hand_stack, axis=0)
-
-max_arm_command = np.max(arm_stack_command, axis=0)
-min_arm_command = np.min(arm_stack_command, axis=0)
-
-max_ruka_command = np.max(hand_stack_command, axis=0)
-min_ruka_command = np.min(hand_stack_command, axis=0)
-
-print(max_ruka_command)
-print(min_ruka_command)
+if len(demo_dirs) == 0:
+    raise RuntimeError("No demonstration folders found!")
 
 # ----------------------------
-# TASK EMBEDDING (dummy)
+# GLOBAL STORAGE
 # ----------------------------
-# If you want a real embedding, you can use sentence-transformers
-task_emb = np.zeros(256, dtype=np.float32)
+all_observations = []
+all_timestamps = []
+
+reference_quat = None  # from first frame of first demo
+reference_cmd_quat = None
 
 # ----------------------------
-# SAVE PKL
+# PROCESS EACH DEMO
 # ----------------------------
+for d_idx, DEMO in enumerate(demo_dirs):
+    print(f"\n=== Processing {DEMO.name} ===")
+
+    # Load pkl data
+    with open(DEMO / "states.pkl", "rb") as f:
+        arm_states = pickle.load(f)
+    with open(DEMO / "commanded_states.pkl", "rb") as f:
+        arm_commanded_states = pickle.load(f)
+    with open(DEMO / "ruka_states.pkl", "rb") as f:
+        hand_states = pickle.load(f)
+    with open(DEMO / "ruka_commanded_states.pkl", "rb") as f:
+        hand_commanded_states = pickle.load(f)
+
+    print(f"Loaded {len(arm_states)} arm frames, {len(hand_states)} hand frames")
+
+    # Extract timestamps
+    arm_times = np.array([s["timestamp"] for s in arm_states])
+    hand_times = np.array([s["timestamp"] for s in hand_states])
+
+    # Loop through hand frames
+    for i, t in enumerate(tqdm(hand_times, desc=f"Sync {DEMO.name}")):
+        obs = {}
+        obs["pixels0"] = np.zeros((IMG_SIZE[1], IMG_SIZE[0], 3), dtype=np.uint8)
+        obs["timestamp"] = float(t)
+
+        # find nearest arm frame
+        arm_idx = np.argmin(np.abs(arm_times - t))
+        if abs(arm_times[arm_idx] - t) > 0.05:
+            continue
+
+        # raw arm state
+        arm_state = np.concatenate(
+            [arm_states[arm_idx]["state"].pos, arm_states[arm_idx]["state"].quat]
+        ).astype(np.float32)
+
+        cmd_state = np.concatenate(
+            [
+                arm_commanded_states[arm_idx]["state"].pos,
+                arm_commanded_states[arm_idx]["state"].quat,
+            ]
+        ).astype(np.float32)
+
+        # Set reference quaternions using very first frame of first demo
+        if reference_quat is None:
+            reference_quat = extract_quat(arm_state).copy()
+            reference_cmd_quat = extract_quat(cmd_state).copy()
+            print("Set global reference quaternions")
+
+        # Apply sign flip to match global reference
+        arm_quat = extract_quat(arm_state)
+        cmd_quat = extract_quat(cmd_state)
+
+        arm_quat = flip_to_reference(arm_quat, reference_quat)
+        cmd_quat = flip_to_reference(cmd_quat, reference_cmd_quat)
+
+        # Replace flipped quat back
+        arm_state[3:7] = arm_quat
+        cmd_state[3:7] = cmd_quat
+
+        # Hand states
+        obs["arm_states"] = arm_state
+        obs["commanded_arm_states"] = cmd_state
+        obs["ruka_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
+        obs["commanded_ruka_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
+
+        all_observations.append(obs)
+        all_timestamps.append(float(t))
+
+# ----------------------------
+# GLOBAL MIN/MAX
+# ----------------------------
+print("\nComputing global min/max across all demos...")
+
+arm_stack = np.stack([o["arm_states"] for o in all_observations], axis=0)
+hand_stack = np.stack([o["ruka_states"] for o in all_observations], axis=0)
+arm_cmd_stack = np.stack([o["commanded_arm_states"] for o in all_observations], axis=0)
+hand_cmd_stack = np.stack([o["commanded_ruka_states"] for o in all_observations], axis=0)
+
 data = {
-    "observations": observations,
-    "timestamps": np.array(timestamps, dtype=np.float64),
-    "max_arm": max_arm,
-    "min_arm": min_arm,
-    "max_ruka": max_ruka,
-    "min_ruka": min_ruka,
-    "max_arm_commanded": max_arm_command,
-    "min_arm_commanded": min_arm_command,
-    "max_ruka_commanded": max_ruka_command,
-    "min_ruka_commanded": min_ruka_command,
-    "task_emb": task_emb
+    "observations": all_observations,
+    "timestamps": np.array(all_timestamps, dtype=np.float64),
+    "max_arm": arm_stack.max(axis=0),
+    "min_arm": arm_stack.min(axis=0),
+    "max_ruka": hand_stack.max(axis=0),
+    "min_ruka": hand_stack.min(axis=0),
+    "max_arm_commanded": arm_cmd_stack.max(axis=0),
+    "min_arm_commanded": arm_cmd_stack.min(axis=0),
+    "max_ruka_commanded": hand_cmd_stack.max(axis=0),
+    "min_ruka_commanded": hand_cmd_stack.min(axis=0),
+    "task_emb": np.zeros(256, dtype=np.float32),
 }
 
+# ----------------------------
+# SAVE MERGED PKL
+# ----------------------------
 save_file = SAVE_PATH / f"{TASK_NAME}.pkl"
 with open(save_file, "wb") as f:
     pickle.dump(data, f)
 
-print(len(observations))
-print(f"Saved processed data (with timestamps) to {save_file}")
+print(f"\nSaved {len(all_observations)} merged frames to {save_file}")
