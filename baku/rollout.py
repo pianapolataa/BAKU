@@ -112,7 +112,7 @@ class AgentRollout:
         t0 = time.time()
 
         # --- Reference quaternion from demo ---
-        ref_quat = self.demo_data["observations"][0]["commanded_arm_states"][3:7].astype(np.float32)
+        ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
 
         try:
             cnt = 0
@@ -163,14 +163,7 @@ class AgentRollout:
                 arm_action = action[:7]  # pos(3) + quat(4)
                 hand_action = action[7:]
 
-                # --- Quaternion sign consistency check ---
-                quat = arm_action[3:7]
-                if np.dot(ref_quat, quat) < 0:
-                    quat *= -1.0
-                    arm_action[3:7] = quat
-
-                print("Arm action (quat adjusted):", arm_action)
-                print("Hand action:", hand_action)
+                print("Arm action:", arm_action)
 
                 # 5. Send arm command directly
                 franka_action = FrankaAction(
