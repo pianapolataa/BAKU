@@ -131,11 +131,11 @@ class AgentRollout:
                 ruka_state = demo_obs["ruka_states"].copy()
                 ##
 
-                # # --- Quaternion sign consistency check ---
-                # quat = arm_state[3:7]
-                # if np.dot(ref_quat, quat) < 0:
-                #     quat *= -1.0
-                #     arm_state[3:7] = quat
+                # --- Quaternion sign consistency check ---
+                quat = arm_state[3:7]
+                if np.dot(ref_quat, quat) < 0:
+                    quat *= -1.0
+                    arm_state[3:7] = quat
 
                 feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
 
