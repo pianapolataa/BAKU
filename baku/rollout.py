@@ -218,7 +218,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.14_train/deterministic/191427/snapshot/31000.pt"
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.14_train/deterministic/191427/snapshot/36000.pt"
 
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
