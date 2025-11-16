@@ -17,6 +17,7 @@ sys.path.append(os.path.expanduser("/home_shared/grail_sissi/BAKU/baku/vr-hand-t
 # --- Ruka imports ---
 from ruka_hand.control.hand import Hand
 from ruka_hand.utils.trajectory import move_to_pos
+from ruka_hand.control.rukav2_teleop import *
 
 # --- Agent imports ---
 from train import WorkspaceIL
@@ -82,11 +83,10 @@ class AgentRollout:
         # Initialize Ruka hand
         # -----------------------------
         self.hand = Hand(hand_type="right")
-        self.curr_hand_pos = self.hand.read_pos()
+        self.handler = RUKAv2Handler()
         time.sleep(0.5)
-        move_to_pos(curr_pos=self.curr_hand_pos, des_pos=self.hand.tensioned_pos, hand=self.hand, traj_len=50)
+        self.handler.reset()
         time.sleep(1)
-        self.curr_hand_pos = self.hand.read_pos()
         print("Ruka hand initialized.")
 
         # -----------------------------
@@ -105,6 +105,14 @@ class AgentRollout:
         # Concatenate pos+quat to match agent input
         arm_state = np.concatenate([raw_state.pos, raw_state.quat]).astype(np.float32)
         return arm_state
+    
+    def norm_quat_vec(self, arr7):
+        """Normalize quaternion part (assumes arr7 is length-7 pos(3)+quat(4)). Returns a copy."""
+        a = arr7.astype(np.float64).copy()
+        q = a[3:7]
+        n = np.linalg.norm(q) + 1e-8
+        a[3:7] = (q / n).astype(np.float32)
+        return a.astype(np.float32)
 
     def run(self, duration_s: float = 60.0, freq: float = 50.0):
         print("Starting live rollout...")
@@ -125,10 +133,12 @@ class AgentRollout:
                 arm_state = self.get_arm_state()
                 ruka_state = self.hand.read_pos()
 
-                # demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
-                # # override arm and hand states with demo
-                # arm_state = demo_obs["arm_states"].copy()
-                # ruka_state = demo_obs["ruka_states"].copy()
+                demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
+                # override arm and hand states with demo
+                arm_state_1 = demo_obs["arm_states"].copy()
+                ruka_state_1 = demo_obs["ruka_states"].copy()
+                print("actual state: ", arm_state)
+                print("demo state: ", arm_state_1)
                 ##
 
                 # --- Quaternion sign consistency check ---
@@ -138,10 +148,16 @@ class AgentRollout:
                     arm_state[3:7] = quat
 
                 feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
+                feat_1 = np.concatenate([arm_state_1, ruka_state_1], axis=0).astype(np.float32)
 
                 # 2. Construct agent observation
                 obs = {
                     "features": feat,
+                    "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+                    "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
+                }
+                obs_1 = {
+                    "features": feat_1,
                     "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
@@ -156,19 +172,33 @@ class AgentRollout:
                         global_step=self.workspace.global_step,
                         eval_mode=True,
                     )
+                    action_1 = self.workspace.agent.act(
+                        obs_1,
+                        prompt=None,
+                        norm_stats=self.norm_stats,
+                        step=0,
+                        global_step=self.workspace.global_step,
+                        eval_mode=True,
+                    )
                 if isinstance(action, torch.Tensor):
                     action = action.cpu().numpy()
+                    action_1 = action_1.cpu().numpy()
 
                 # 4. Split into arm + hand commands
                 arm_action = action[:7]  # pos(3) + quat(4)
                 hand_action = action[7:]
+                arm_action = self.norm_quat_vec(arm_action)
+                arm_action_1 = action_1[:7]  # pos(3) + quat(4)
+                hand_action_1 = action_1[7:]
+                arm_action_1 = self.norm_quat_vec(arm_action_1)
 
-                print("Arm state:", arm_state)
+                print("Arm action:", arm_action)
+                print("Arm action demo:", arm_action_1)
 
                 # 5. Send arm command directly
                 franka_action = FrankaAction(
-                    pos=arm_action[:3],
-                    quat=arm_action[3:7],
+                    pos=arm_action_1[:3],
+                    quat=arm_action_1[3:7],
                     gripper=-1,
                     reset=False,
                     timestamp=time.time(),
@@ -177,7 +207,7 @@ class AgentRollout:
                 _ = self.arm_socket.recv()
 
                 # 6. Send hand command directly
-                move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action, hand=self.hand, traj_len=35)
+                move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action_1, hand=self.hand, traj_len=35)
                 self.curr_hand_pos = self.hand.read_pos()
 
                 # 7. Logging
