@@ -350,7 +350,7 @@ class AgentRollout:
         # -----------------------------
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         self.logged_data = []  # always store arm actions for plotting
-        self.plot_path = Path(f"live_rollout_{timestamp}_arm_plot.png")
+        self.plot_path = Path(f"/home_shared/grail_sissi/BAKU/rollout.png")
         if self.save_log:
             self.log_path = Path(f"live_rollout_{timestamp}.pkl")
             print(f"Logging enabled: {self.log_path}")
@@ -431,7 +431,7 @@ class AgentRollout:
 
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
-                time.sleep(max(0, next_time - elapsed))
+                time.sleep(0.07)
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
