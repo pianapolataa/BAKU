@@ -407,11 +407,16 @@ class AgentRollout:
                 with torch.no_grad():
                     action = self.workspace.agent.act(obs, prompt=None, norm_stats=self.norm_stats, step=0,
                                                      global_step=self.workspace.global_step, eval_mode=True)
+                    action_1 = self.workspace.agent.act(obs_1, prompt=None, norm_stats=self.norm_stats, step=0,
+                                                     global_step=self.workspace.global_step, eval_mode=True)
                 if isinstance(action, torch.Tensor):
                     action = action.cpu().numpy()
+                    action_1 = action.cpu().numpy()
 
                 arm_action = self.norm_quat_vec(action[:7])
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
+                arm_action_1 = self.norm_quat_vec(action_1[:7])
+                arm_action_1[:3] = np.clip(arm_action_1[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
 
                 franka_action = FrankaAction(
                     pos=arm_action[:3],
