@@ -215,7 +215,7 @@ class AgentRollout:
                 # # 6. Send hand command directly
                 # hand_action = np.clip(hand_action_1, self.hand.min_lim, self.hand.max_lim)
                 # self.curr_hand_pos = self.hand.read_pos()
-                # move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action_1, hand=self.hand, traj_len=35)
+                # move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action_1, hand=self.hand, traj_len=45)
 
                 # # 7. Logging
                 # if self.save_log:
