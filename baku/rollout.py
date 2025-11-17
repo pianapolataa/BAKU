@@ -426,7 +426,7 @@ class AgentRollout:
                 # --- Always store for plotting ---
                 self.logged_data.append({
                     "timestamp": time.time() - t0,
-                    "arm_action": arm_action.copy()
+                    "arm_action": arm_action.copy(),
                     "arm_action_1": arm_action_1.copy()
                 })
 
