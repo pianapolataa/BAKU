@@ -431,8 +431,8 @@ class AgentRollout:
                 # --- Always store for plotting ---
                 self.logged_data.append({
                     "timestamp": time.time() - t0,
-                    "arm_action": arm_action.copy(),
-                    "arm_action_1": arm_action_1.copy()
+                    "action": action.copy(),
+                    "action_1": action_1.copy()
                 })
 
                 elapsed = time.time() - t0
@@ -452,27 +452,32 @@ class AgentRollout:
                     pickle.dump(self.logged_data, f)
                 print(f"Saved rollout log to {self.log_path}")
 
-            # Always plot arm actions
+            # Always plot full 23D action array
             if self.logged_data:
-                timestamps = [d["timestamp"] for d in self.logged_data] if self.logged_data else [0]
-                full_actions = np.stack([np.concatenate([d["arm_action"], action[7:]]) for d, action in zip(self.logged_data, [a for a in np.stack([d["arm_action"] for d in self.logged_data])])], axis=0) \
-                    if self.logged_data else np.zeros((1, 23))
-                full_actions_1 = np.stack([np.concatenate([d["arm_action_1"], action_1[7:]]) for d, action_1 in zip(self.logged_data, [a for a in np.stack([d["arm_action_1"] for d in self.logged_data])])], axis=0) \
-                    if self.logged_data else np.zeros((1, 23))
+                timestamps = [d["timestamp"] for d in self.logged_data]
+                full_actions = np.stack([d["full_action"] for d in self.logged_data], axis=0)
+                full_actions_1 = np.stack([d["full_action_1"] for d in self.logged_data], axis=0)
 
-            fig, axes = plt.subplots(23, 1, figsize=(12, 24), sharex=True)
-            labels = [f"dim_{i}" for i in range(23)]
-            for i in range(23):
-                axes[i].plot(timestamps, full_actions[:, i], label="rollout")
-                axes[i].plot(timestamps, full_actions_1[:, i], label="demo-based", linestyle="--")
-                axes[i].set_ylabel(labels[i])
-                axes[i].grid(True)
-                axes[i].legend()
-            axes[-1].set_xlabel("Time [s]")
-            plt.tight_layout()
-            plt.savefig(self.plot_path)
-            plt.close(fig)
-            print(f"Saved full 23D action plot to {self.plot_path}")
+                fig, axes = plt.subplots(5, 5, figsize=(20, 20), sharex=True)
+                axes = axes.flatten()
+                labels = [f"dim_{i}" for i in range(23)]
+
+                for i in range(23):
+                    axes[i].plot(timestamps, full_actions[:, i], label="rollout")
+                    axes[i].plot(timestamps, full_actions_1[:, i], label="demo-based", linestyle="--")
+                    axes[i].set_ylabel(labels[i])
+                    axes[i].grid(True)
+                    axes[i].legend(fontsize=8)
+
+                # Hide extra subplots (last 2)
+                for i in range(23, 25):
+                    axes[i].axis('off')
+
+                axes[-1].set_xlabel("Time [s]")
+                plt.tight_layout()
+                plt.savefig(self.plot_path)
+                plt.close(fig)
+                print(f"Saved full 23D action plot to {self.plot_path}")
 
 
 
