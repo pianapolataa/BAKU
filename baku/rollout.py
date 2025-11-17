@@ -11,7 +11,7 @@ import os
 # --- Franka imports ---
 from frankateach.messages import FrankaAction
 from frankateach.network import create_request_socket
-from frankateach.constants import LOCALHOST, CONTROL_PORT
+from frankateach.constants import *
 
 sys.path.append(os.path.expanduser("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/RUKA"))
 # --- Ruka imports ---
@@ -79,15 +79,15 @@ class AgentRollout:
         _ = pickle.loads(self.arm_socket.recv())
         print("Franka arm reset complete.")
 
-        # -----------------------------
-        # Initialize Ruka hand
-        # -----------------------------
-        self.hand = Hand(hand_type="right")
-        self.handler = RUKAv2Handler()
-        time.sleep(0.5)
-        self.handler.reset()
-        time.sleep(1)
-        print("Ruka hand initialized.")
+        # # -----------------------------
+        # # Initialize Ruka hand
+        # # -----------------------------
+        # self.hand = Hand(hand_type="right")
+        # self.handler = RUKAv2Handler()
+        # time.sleep(0.5)
+        # self.handler.reset()
+        # time.sleep(1)
+        # print("Ruka hand initialized.")
 
         # -----------------------------
         # Logging
@@ -131,7 +131,7 @@ class AgentRollout:
 
                 ##
                 arm_state = self.get_arm_state()
-                ruka_state = self.hand.read_pos()
+                # ruka_state = self.hand.read_pos()
 
                 demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
                 # override arm and hand states with demo
@@ -147,7 +147,7 @@ class AgentRollout:
                     quat *= -1.0
                     arm_state[3:7] = quat
 
-                feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
+                feat = np.concatenate([arm_state, ruka_state_1], axis=0).astype(np.float32)
                 feat_1 = np.concatenate([arm_state_1, ruka_state_1], axis=0).astype(np.float32)
 
                 # 2. Construct agent observation
@@ -192,13 +192,19 @@ class AgentRollout:
                 hand_action_1 = action_1[7:]
                 arm_action_1 = self.norm_quat_vec(arm_action_1)
 
+                arm_action[:3] = np.clip(
+                    arm_action[:3],
+                    a_min=ROBOT_WORKSPACE_MIN,
+                    a_max=ROBOT_WORKSPACE_MAX,
+                )
+
                 print("Arm action:", arm_action)
                 print("Arm action demo:", arm_action_1)
 
                 # 5. Send arm command directly
                 franka_action = FrankaAction(
-                    pos=arm_action_1[:3],
-                    quat=arm_action_1[3:7],
+                    pos=arm_action[:3],
+                    quat=arm_action[3:7],
                     gripper=-1,
                     reset=False,
                     timestamp=time.time(),
@@ -206,20 +212,20 @@ class AgentRollout:
                 self.arm_socket.send(pickle.dumps(franka_action, protocol=-1))
                 _ = self.arm_socket.recv()
 
-                # 6. Send hand command directly
-                hand_action = np.clip(hand_action_1, self.hand.min_lim, self.hand.max_lim)
-                move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action_1, hand=self.hand, traj_len=35)
-                self.curr_hand_pos = self.hand.read_pos()
+                # # 6. Send hand command directly
+                # hand_action = np.clip(hand_action_1, self.hand.min_lim, self.hand.max_lim)
+                # self.curr_hand_pos = self.hand.read_pos()
+                # move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action_1, hand=self.hand, traj_len=35)
 
-                # 7. Logging
-                if self.save_log:
-                    self.logged_data.append({
-                        "timestamp": time.time(),
-                        "arm_state": arm_state,
-                        "ruka_state": ruka_state,
-                        "arm_action": arm_action,
-                        "hand_action": hand_action,
-                    })
+                # # 7. Logging
+                # if self.save_log:
+                #     self.logged_data.append({
+                #         "timestamp": time.time(),
+                #         "arm_state": arm_state,
+                #         "ruka_state": ruka_state,
+                #         "arm_action": arm_action,
+                #         "hand_action": hand_action,
+                #     })
 
                 # Maintain loop frequency
                 elapsed = time.time() - t0
@@ -231,7 +237,7 @@ class AgentRollout:
 
         finally:
             self.arm_socket.close()
-            self.hand.close()
+            # self.hand.close()
             print("Connections closed.")
             if self.save_log and self.logged_data:
                 with open(self.log_path, "wb") as f:
@@ -248,7 +254,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.14_train/deterministic/212236/snapshot/59000.pt"
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.17_train/deterministic/133617/snapshot/46000.pt"
 
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
