@@ -427,6 +427,7 @@ class AgentRollout:
                 self.logged_data.append({
                     "timestamp": time.time() - t0,
                     "arm_action": arm_action.copy()
+                    "arm_action_1": arm_action_1.copy()
                 })
 
                 elapsed = time.time() - t0
@@ -448,14 +449,19 @@ class AgentRollout:
 
             # Always plot arm actions
             if self.logged_data:
-                timestamps = [d["timestamp"] for d in self.logged_data]
-                arm_actions = np.stack([d["arm_action"] for d in self.logged_data], axis=0)  # shape: (T,7)
+                # Always plot arm actions
+                timestamps = [d["timestamp"] for d in self.logged_data] if self.logged_data else [0]
+                arm_actions = np.stack([d["arm_action"] for d in self.logged_data], axis=0) if self.logged_data else np.zeros((1,7))
+                arm_actions_1 = np.stack([d["arm_action_1"] for d in self.logged_data], axis=0) if self.logged_data else np.zeros((1,7))
+
                 fig, axes = plt.subplots(7, 1, figsize=(10, 12), sharex=True)
                 labels = ["pos_x", "pos_y", "pos_z", "quat_w", "quat_x", "quat_y", "quat_z"]
                 for i in range(7):
-                    axes[i].plot(timestamps, arm_actions[:, i])
+                    axes[i].plot(timestamps, arm_actions[:, i], label="real state")
+                    axes[i].plot(timestamps, arm_actions_1[:, i], label="demo-based", linestyle="--")
                     axes[i].set_ylabel(labels[i])
                     axes[i].grid(True)
+                    axes[i].legend()
                 axes[-1].set_xlabel("Time [s]")
                 plt.tight_layout()
                 plt.savefig(self.plot_path)
