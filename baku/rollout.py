@@ -349,12 +349,8 @@ class AgentRollout:
         # -----------------------------
         # Logging
         # -----------------------------
-        if self.save_log:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.log_path = Path(f"live_rollout_{timestamp}.pkl")
-            self.plot_path = Path(f"live_rollout_{timestamp}_arm_plot.png")
-            self.logged_data = []
-            print(f"Logging enabled: {self.log_path}")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.plot_path = Path(f"live_rollout_{timestamp}_arm_plot.png")
 
     def get_arm_state(self):
         """Query current arm state from Franka."""
