@@ -230,7 +230,7 @@ class AgentRollout:
                 # Maintain loop frequency
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
-                time.sleep(max(0, next_time - elapsed))
+                time.sleep(0.5)
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
