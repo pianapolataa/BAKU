@@ -207,6 +207,7 @@ class AgentRollout:
                 _ = self.arm_socket.recv()
 
                 # 6. Send hand command directly
+                hand_action = np.clip(hand_action_1, self.hand.min_lim, self.hand.max_lim)
                 move_to_pos(curr_pos=self.curr_hand_pos, des_pos=hand_action_1, hand=self.hand, traj_len=35)
                 self.curr_hand_pos = self.hand.read_pos()
 
