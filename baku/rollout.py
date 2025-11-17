@@ -263,7 +263,6 @@
 
 # if __name__ == "__main__":
 #     main()
-
 #!/usr/bin/env python3
 import pickle
 import time
@@ -350,7 +349,11 @@ class AgentRollout:
         # Logging
         # -----------------------------
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.logged_data = []  # always store arm actions for plotting
         self.plot_path = Path(f"live_rollout_{timestamp}_arm_plot.png")
+        if self.save_log:
+            self.log_path = Path(f"live_rollout_{timestamp}.pkl")
+            print(f"Logging enabled: {self.log_path}")
 
     def get_arm_state(self):
         """Query current arm state from Franka."""
@@ -404,14 +407,10 @@ class AgentRollout:
                 with torch.no_grad():
                     action = self.workspace.agent.act(obs, prompt=None, norm_stats=self.norm_stats, step=0,
                                                      global_step=self.workspace.global_step, eval_mode=True)
-                    action_1 = self.workspace.agent.act(obs_1, prompt=None, norm_stats=self.norm_stats, step=0,
-                                                       global_step=self.workspace.global_step, eval_mode=True)
                 if isinstance(action, torch.Tensor):
                     action = action.cpu().numpy()
-                    action_1 = action_1.cpu().numpy()
 
                 arm_action = self.norm_quat_vec(action[:7])
-                arm_action_1 = self.norm_quat_vec(action_1[:7])
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
 
                 franka_action = FrankaAction(
@@ -424,16 +423,15 @@ class AgentRollout:
                 self.arm_socket.send(pickle.dumps(franka_action, protocol=-1))
                 _ = self.arm_socket.recv()
 
-                # --- Logging arm action ---
-                if self.save_log:
-                    self.logged_data.append({
-                        "timestamp": time.time() - t0,
-                        "arm_action": arm_action.copy()
-                    })
+                # --- Always store for plotting ---
+                self.logged_data.append({
+                    "timestamp": time.time() - t0,
+                    "arm_action": arm_action.copy()
+                })
 
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
-                time.sleep(0.07)
+                time.sleep(max(0, next_time - elapsed))
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
@@ -442,13 +440,14 @@ class AgentRollout:
             self.arm_socket.close()
             print("Connections closed.")
 
+            # Save pickle log if requested
             if self.save_log and self.logged_data:
-                # Save pickle log
                 with open(self.log_path, "wb") as f:
                     pickle.dump(self.logged_data, f)
                 print(f"Saved rollout log to {self.log_path}")
 
-                # Plot arm actions
+            # Always plot arm actions
+            if self.logged_data:
                 timestamps = [d["timestamp"] for d in self.logged_data]
                 arm_actions = np.stack([d["arm_action"] for d in self.logged_data], axis=0)  # shape: (T,7)
                 fig, axes = plt.subplots(7, 1, figsize=(10, 12), sharex=True)
