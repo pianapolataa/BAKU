@@ -455,8 +455,8 @@ class AgentRollout:
             # Always plot full 23D action array
             if self.logged_data:
                 timestamps = [d["timestamp"] for d in self.logged_data]
-                full_actions = np.stack([d["full_action"] for d in self.logged_data], axis=0)
-                full_actions_1 = np.stack([d["full_action_1"] for d in self.logged_data], axis=0)
+                full_actions = np.stack([d["action"] for d in self.logged_data], axis=0)
+                full_actions_1 = np.stack([d["action_1"] for d in self.logged_data], axis=0)
 
                 fig, axes = plt.subplots(5, 5, figsize=(20, 20), sharex=True)
                 axes = axes.flatten()
