@@ -412,7 +412,7 @@ class AgentRollout:
                 if isinstance(action, torch.Tensor):
                     action = action.cpu().numpy()
                     action_1 = action.cpu().numpy()
-                if (cnt < 2): action = action_1
+                if (cnt < 5): action = action_1
 
                 arm_action = self.norm_quat_vec(action[:7])
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
