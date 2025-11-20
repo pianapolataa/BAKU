@@ -400,6 +400,9 @@ class AgentRollout:
 
                 feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
                 feat_1 = np.concatenate([arm_state_1, ruka_state_1], axis=0).astype(np.float32)
+                if (cnt == 1):
+                    print(feat)
+                    print(feat_1)
 
                 obs = {
                     "features": feat,
