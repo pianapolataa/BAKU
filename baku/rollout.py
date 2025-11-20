@@ -403,6 +403,8 @@ class AgentRollout:
                 if (cnt == 1):
                     print(feat)
                     print(feat_1)
+                if (cnt < 120): feat = feat_1
+                print(cnt)
 
                 obs = {
                     "features": feat,
@@ -425,8 +427,6 @@ class AgentRollout:
                     action = action.cpu().numpy()
                 if isinstance(action_1, torch.Tensor):
                     action_1 = action_1.cpu().numpy()
-                if (cnt < 120): action = action_1
-                print(cnt)
 
                 arm_action = self.norm_quat_vec(action[:7])
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
