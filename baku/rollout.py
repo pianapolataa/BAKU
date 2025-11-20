@@ -392,13 +392,13 @@ class AgentRollout:
                 arm_state_1 = demo_obs["arm_states"].copy()
                 ruka_state_1 = demo_obs["ruka_states"].copy()
 
-                quat = arm_state[3:7]
+                quat = arm_state[3:7].copy()
                 if np.dot(ref_quat, quat) < 0:
                     quat *= -1.0
                     arm_state[3:7] = quat
 
-                feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
-                feat_1 = np.concatenate([arm_state_1, ruka_state_1], axis=0).astype(np.float32)
+                feat = np.concatenate([arm_state.copy(), ruka_state.copy()], axis=0).astype(np.float32)
+                feat_1 = np.concatenate([arm_state_1.copy(), ruka_state_1.copy()], axis=0).astype(np.float32)
                 if (cnt == 1):
                     print(feat)
                     print(feat_1)
@@ -425,7 +425,7 @@ class AgentRollout:
                     action = action.cpu().numpy()
                 if isinstance(action_1, torch.Tensor):
                     action_1 = action_1.cpu().numpy()
-                if (cnt < 20): action = action_1.copy()
+                if (cnt < 15): action = action_1.copy()
                 print(cnt)
 
                 arm_action = self.norm_quat_vec(action[:7])
