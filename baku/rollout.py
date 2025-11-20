@@ -420,6 +420,7 @@ class AgentRollout:
                                                      global_step=self.workspace.global_step, eval_mode=True)
                 if isinstance(action, torch.Tensor):
                     action = action.cpu().numpy()
+                if isinstance(action_1, torch.Tensor):
                     action_1 = action_1.cpu().numpy()
                 if (cnt < 5): action = action_1
 
