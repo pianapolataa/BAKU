@@ -346,7 +346,6 @@ class AgentRollout:
         print("Franka arm reset complete.")
 
         # Initialize Ruka hand
-        self.hand = Hand(hand_type="right")
         self.handler = RUKAv2Handler()
         time.sleep(0.5)
         self.handler.reset()
@@ -388,7 +387,7 @@ class AgentRollout:
             while time.time() - t0 < duration_s:
                 cnt += 1
                 arm_state = self.get_arm_state()
-                ruka_state = self.hand.read_pos()
+                ruka_state = self.handler.hand.read_pos()
                 demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
                 arm_state_1 = demo_obs["arm_states"].copy()
                 ruka_state_1 = demo_obs["ruka_states"].copy()
@@ -403,8 +402,6 @@ class AgentRollout:
                 if (cnt == 1):
                     print(feat)
                     print(feat_1)
-                if (cnt < 120): feat = feat_1
-                print(cnt)
 
                 obs = {
                     "features": feat,
@@ -427,6 +424,8 @@ class AgentRollout:
                     action = action.cpu().numpy()
                 if isinstance(action_1, torch.Tensor):
                     action_1 = action_1.cpu().numpy()
+                if (cnt < 120): action = action_1
+                print(cnt)
 
                 arm_action = self.norm_quat_vec(action[:7])
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
@@ -444,8 +443,8 @@ class AgentRollout:
                 _ = self.arm_socket.recv()
 
                 # 6. Send hand command directly
-                hand_action = np.clip(action[7:], self.hand.min_lim, self.hand.max_lim)
-                move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.hand, traj_len=45)
+                hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
+                move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.handler.hand, traj_len=45)
 
                 # --- Always store for plotting ---
                 self.logged_data.append({
