@@ -445,7 +445,7 @@ class AgentRollout:
 
                 # 6. Send hand command directly
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
-                move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.handler.hand, traj_len=45)
+                move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.handler.hand, traj_len=20)
 
                 # --- Always store for plotting ---
                 self.logged_data.append({
@@ -456,7 +456,7 @@ class AgentRollout:
 
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
-                time.sleep(0.07)
+                time.sleep(0.05)
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
