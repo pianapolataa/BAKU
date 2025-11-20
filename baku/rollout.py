@@ -345,6 +345,14 @@ class AgentRollout:
         _ = pickle.loads(self.arm_socket.recv())
         print("Franka arm reset complete.")
 
+        # Initialize Ruka hand
+        self.hand = Hand(hand_type="right")
+        self.handler = RUKAv2Handler()
+        time.sleep(0.5)
+        self.handler.reset()
+        time.sleep(1)
+        print("Ruka hand initialized.")
+
         # -----------------------------
         # Logging
         # -----------------------------
@@ -380,6 +388,7 @@ class AgentRollout:
             while time.time() - t0 < duration_s:
                 cnt += 1
                 arm_state = self.get_arm_state()
+                hand_state = self.hand.read_pos()
                 demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
                 arm_state_1 = demo_obs["arm_states"].copy()
                 ruka_state_1 = demo_obs["ruka_states"].copy()
@@ -491,7 +500,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.17_train/deterministic/133617/snapshot/46000.pt"
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.19_train/deterministic/193903/snapshot/27000.pt"
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
