@@ -402,6 +402,7 @@ class AgentRollout:
                 if (cnt == 1):
                     print(feat)
                     print(feat_1)
+                    feat = feat_1.copy()
 
                 obs = {
                     "features": feat,
