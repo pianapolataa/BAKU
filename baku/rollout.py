@@ -388,7 +388,7 @@ class AgentRollout:
             while time.time() - t0 < duration_s:
                 cnt += 1
                 arm_state = self.get_arm_state()
-                hand_state = self.hand.read_pos()
+                ruka_state = self.hand.read_pos()
                 demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
                 arm_state_1 = demo_obs["arm_states"].copy()
                 ruka_state_1 = demo_obs["ruka_states"].copy()
@@ -398,7 +398,7 @@ class AgentRollout:
                     quat *= -1.0
                     arm_state[3:7] = quat
 
-                feat = np.concatenate([arm_state, ruka_state_1], axis=0).astype(np.float32)
+                feat = np.concatenate([arm_state, ruka_state], axis=0).astype(np.float32)
                 feat_1 = np.concatenate([arm_state_1, ruka_state_1], axis=0).astype(np.float32)
 
                 obs = {
@@ -420,7 +420,7 @@ class AgentRollout:
                                                      global_step=self.workspace.global_step, eval_mode=True)
                 if isinstance(action, torch.Tensor):
                     action = action.cpu().numpy()
-                    action_1 = action.cpu().numpy()
+                    action_1 = action_1.cpu().numpy()
                 if (cnt < 5): action = action_1
 
                 arm_action = self.norm_quat_vec(action[:7])
@@ -437,6 +437,10 @@ class AgentRollout:
                 )
                 self.arm_socket.send(pickle.dumps(franka_action, protocol=-1))
                 _ = self.arm_socket.recv()
+
+                # 6. Send hand command directly
+                hand_action = np.clip(action[7:], self.hand.min_lim, self.hand.max_lim)
+                move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.hand, traj_len=45)
 
                 # --- Always store for plotting ---
                 self.logged_data.append({
