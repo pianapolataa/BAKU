@@ -29,7 +29,7 @@ def extract_quat(x):
 # GATHER ALL DEMO FOLDERS
 # ----------------------------
 demo_dirs = sorted(
-    [p for p in DATA_ROOT.iterdir() if p.is_dir() and "demonstration_16" in p.name]
+    [p for p in DATA_ROOT.iterdir() if p.is_dir() and "demonstration_9" in p.name]
 )
 print(f"Found {len(demo_dirs)} demos")
 
