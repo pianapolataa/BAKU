@@ -245,7 +245,7 @@ from omegaconf import DictConfig
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.19_train/deterministic/193903/snapshot/57000.pt" # 3 demo policy best:57000
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/151723/snapshot/41000.pt" # new 11 demo w noise
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/151723/snapshot/47000.pt" # new 11 demo w noise
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
