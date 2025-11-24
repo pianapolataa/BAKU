@@ -185,8 +185,8 @@ class AgentRollout:
                 # --- Always store for plotting ---
                 self.logged_data.append({
                     "timestamp": time.time() - t0,
-                    "action": feat.copy(),
-                    "action_1": feat_1.copy()
+                    "action": action.copy(),
+                    "action_1": action_1.copy()
                 })
 
                 elapsed = time.time() - t0
