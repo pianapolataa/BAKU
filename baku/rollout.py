@@ -160,7 +160,7 @@ class AgentRollout:
                     action = action.cpu().numpy()
                 if isinstance(action_1, torch.Tensor):
                     action_1 = action_1.cpu().numpy()
-                if (cnt < 35): action = action_1.copy()
+                if (cnt < 30): action = action_1.copy()
                 print(cnt)
 
                 arm_action = self.norm_quat_vec(action[:7])
