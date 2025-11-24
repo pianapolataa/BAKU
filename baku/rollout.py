@@ -164,8 +164,8 @@ class AgentRollout:
                 # --- Always store for plotting ---
                 self.logged_data.append({
                     "timestamp": time.time() - t0,
-                    "action": action.copy(),
-                    "action_1": action_1.copy()
+                    "action": feat.copy(),
+                    "action_1": feat_1.copy()
                 })
                 
                 if (cnt < 160): action = action_1.copy()
