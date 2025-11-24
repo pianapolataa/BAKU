@@ -191,7 +191,7 @@ class AgentRollout:
 
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
-                time.sleep(0.05)
+                time.sleep(0.037)
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
