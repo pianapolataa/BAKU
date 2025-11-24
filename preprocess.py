@@ -102,6 +102,7 @@ for d_idx, DEMO in enumerate(demo_dirs):
         arm_quat = extract_quat(arm_state).copy()
         cmd_quat = extract_quat(cmd_state).copy()
 
+        """
         # global hemisphere alignment
         arm_quat_aligned = flip_to_reference(arm_quat, reference_quat)
         if np.dot(arm_quat_aligned, arm_quat) < 0:
@@ -130,6 +131,7 @@ for d_idx, DEMO in enumerate(demo_dirs):
         # Replace adjusted quats back
         arm_state[3:7] = arm_quat
         cmd_state[3:7] = cmd_quat
+        """
 
         # Hand states
         obs["arm_states"] = arm_state
