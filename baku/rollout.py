@@ -132,7 +132,8 @@ class AgentRollout:
                     quat *= -1.0
                     arm_state[3:7] = quat
 
-                feat = np.concatenate([arm_state_1.copy(), ruka_state.copy()], axis=0).astype(np.float32)
+                arm_state[3:7] = arm_state_1[3:7].copy()
+                feat = np.concatenate([arm_state.copy(), ruka_state.copy()], axis=0).astype(np.float32)
                 feat_1 = np.concatenate([arm_state_1.copy(), ruka_state_1.copy()], axis=0).astype(np.float32)
                 if (cnt == 1):
                     print(feat)
