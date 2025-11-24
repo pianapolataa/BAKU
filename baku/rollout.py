@@ -160,7 +160,15 @@ class AgentRollout:
                     action = action.cpu().numpy()
                 if isinstance(action_1, torch.Tensor):
                     action_1 = action_1.cpu().numpy()
-                if (cnt < 2): action = action_1.copy()
+
+                # --- Always store for plotting ---
+                self.logged_data.append({
+                    "timestamp": time.time() - t0,
+                    "action": action.copy(),
+                    "action_1": action_1.copy()
+                })
+                
+                if (cnt < 160): action = action_1.copy()
                 print(cnt)
 
                 arm_action = self.norm_quat_vec(action[:7])
@@ -181,13 +189,6 @@ class AgentRollout:
                 # 6. Send hand command directly
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
                 move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.handler.hand, traj_len=20)
-
-                # --- Always store for plotting ---
-                self.logged_data.append({
-                    "timestamp": time.time() - t0,
-                    "action": action.copy(),
-                    "action_1": action_1.copy()
-                })
 
                 elapsed = time.time() - t0
                 next_time = (len(self.logged_data) + 1) * dt
