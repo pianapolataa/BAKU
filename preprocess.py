@@ -10,8 +10,8 @@ from tqdm import tqdm
 # ----------------------------
 DATA_ROOT = Path("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/data")
 IMG_SIZE = (128, 128)
-# SAVE_PATH = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl")
-SAVE_PATH = Path("/home_shared/grail_sissi/BAKU/test")
+SAVE_PATH = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl")
+# SAVE_PATH = Path("/home_shared/grail_sissi/BAKU/test")
 SAVE_PATH.mkdir(parents=True, exist_ok=True)
 TASK_NAME = "demo_task"
 
@@ -29,7 +29,7 @@ def extract_quat(x):
 # GATHER ALL DEMO FOLDERS
 # ----------------------------
 demo_dirs = sorted(
-    [p for p in DATA_ROOT.iterdir() if p.is_dir() and "demonstration_14" in p.name]
+    [p for p in DATA_ROOT.iterdir() if p.is_dir() and "demonstration" in p.name]
 )
 print(f"Found {len(demo_dirs)} demos")
 
