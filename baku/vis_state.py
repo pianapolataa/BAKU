@@ -8,7 +8,7 @@ def main():
     # -----------------------------
     # 1. Load processed demo PKL
     # -----------------------------
-    pkl_file = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl")
+    pkl_file = Path("/home_shared/grail_sissi/BAKU/test/demo_task.pkl")
     with open(pkl_file, "rb") as f:
         demo_data = pickle.load(f)
     demo_obs = demo_data["observations"]
