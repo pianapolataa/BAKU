@@ -123,7 +123,7 @@ class AgentRollout:
                 cnt += 1
                 arm_state = self.get_arm_state()
                 ruka_state = self.handler.hand.read_pos()
-                demo_obs = self.demo_data["observations"][min(cnt+2, len(self.demo_data["observations"]) - 1)]
+                demo_obs = self.demo_data["observations"][min(cnt+1, len(self.demo_data["observations"]) - 1)]
                 arm_state_1 = demo_obs["arm_states"].copy()
                 ruka_state_1 = demo_obs["ruka_states"].copy()
 
@@ -142,13 +142,15 @@ class AgentRollout:
 
                 obs = {
                     "features": feat,
-                    "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+                    # "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+                    "pixels0": self.demo_data["observations"][min(cnt+1, len(self.demo_data["observations"]) - 1)]["pixels0"],
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
 
                 obs_1 = {
                     "features": feat_1,
-                    "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+                    # "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+                    "pixels0": self.demo_data["observations"][min(cnt+1, len(self.demo_data["observations"]) - 1)]["pixels0"],
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
 
