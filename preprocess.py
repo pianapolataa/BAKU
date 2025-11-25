@@ -277,7 +277,7 @@ for d_idx, DEMO in enumerate(demo_dirs):
         if not ret:
             continue
 
-        obs["pixels0"] = load_and_resize_rgb(frame, IMG_SIZE)  # (1,3,H,W)
+        obs["pixels0"] = load_and_resize_rgb(IMG_SIZE)  # (3,H,W)
 
         # find nearest arm frame
         arm_idx = np.argmin(np.abs(arm_times - t))
