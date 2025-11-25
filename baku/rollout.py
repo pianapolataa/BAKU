@@ -7,6 +7,7 @@ from pathlib import Path
 from datetime import datetime
 import sys
 import os
+import cv2
 import matplotlib.pyplot as plt
 
 # --- Franka imports ---
@@ -88,6 +89,17 @@ class AgentRollout:
         print("Ruka hand initialized.")
 
         # -----------------------------
+        # Setup IP camera for live RGB
+        # -----------------------------
+        self.cam_url = "http://10.21.0.5:4747/video"
+        self.cam = cv2.VideoCapture(self.cam_url)
+
+        if not self.cam.isOpened():
+            raise RuntimeError(f"Cannot open IP camera at {self.cam_url}")
+
+        print(f"Connected to IP camera at {self.cam_url}")
+
+        # -----------------------------
         # Logging
         # -----------------------------
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -110,6 +122,14 @@ class AgentRollout:
         n = np.linalg.norm(q) + 1e-8
         a[3:7] = (q / n).astype(np.float32)
         return a.astype(np.float32)
+    
+    def load_and_resize_rgb(self, img, size):
+        """Convert BGR->RGB, resize, convert to CHW, float32, shape (1,3,H,W)."""
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
+        img = img.astype(np.float32)
+        img = np.transpose(img, (2, 0, 1))  # CHW
+        return img  # (3,H,W)
 
     def run(self, duration_s: float = 60.0, freq: float = 50.0):
         print("Starting live rollout...")
@@ -140,10 +160,19 @@ class AgentRollout:
                     print(feat_1)
                     feat = feat_1.copy()
 
+                # --- Grab camera frame ---
+                ret, frame = self.cap.read()
+                if not ret:
+                    raise RuntimeError("Failed to read frame from IP camera")
+
+                # Process frame
+                rgb = self.load_and_resize_rgb(frame, size=(84, 84))   # (3,84,84)
+
                 obs = {
                     "features": feat,
                     # "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
-                    "pixels0": self.demo_data["observations"][min(cnt+1, len(self.demo_data["observations"]) - 1)]["pixels0"],
+                    # "pixels0": self.demo_data["observations"][min(cnt+1, len(self.demo_data["observations"]) - 1)]["pixels0"],
+                    "pixels0": rgb,
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
 
@@ -203,6 +232,11 @@ class AgentRollout:
         finally:
             self.arm_socket.close()
             print("Connections closed.")
+            self.handler.hand.close()
+
+            if hasattr(self, "cam"):
+                self.cam.release()
+                print("IP camera released.")
 
             # Save pickle log if requested
             if self.save_log and self.logged_data:
