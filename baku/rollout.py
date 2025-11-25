@@ -246,8 +246,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.19_train/deterministic/193903/snapshot/57000.pt" # 3 demo policy best:57000
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/174342/snapshot/86000.pt" # new 11 demo w noise
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/174342/snapshot/86000.pt" # WORKING NONVISUAL POLICY
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
