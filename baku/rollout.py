@@ -161,7 +161,7 @@ class AgentRollout:
                     feat = feat_1.copy()
 
                 # --- Grab camera frame ---
-                ret, frame = self.cap.read()
+                ret, frame = self.cam.read()
                 if not ret:
                     raise RuntimeError("Failed to read frame from IP camera")
 
