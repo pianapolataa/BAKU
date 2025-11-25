@@ -204,7 +204,7 @@ def load_and_resize_rgb(img, size):
     img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
     img = img.astype(np.float32) / 255.0
     img = np.transpose(img, (2, 0, 1))  # CHW
-    return img[None]  # (1,3,H,W)
+    return img  # (3,H,W)
 
 
 # ----------------------------
@@ -277,7 +277,7 @@ for d_idx, DEMO in enumerate(demo_dirs):
         if not ret:
             continue
 
-        obs["pixels0"] = load_and_resize_rgb(IMG_SIZE)  # (3,H,W)
+        obs["pixels0"] = load_and_resize_rgb(frame, IMG_SIZE)  # (3,H,W)
 
         # find nearest arm frame
         arm_idx = np.argmin(np.abs(arm_times - t))
