@@ -173,16 +173,16 @@ class AgentRollout:
 
                 obs = {
                     "features": feat,
-                    # "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
-                    "pixels0": self.demo_data["observations"][min(cnt+1, len(self.demo_data["observations"]) - 1)]["pixels0"],
+                    "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+                    # "pixels0": self.demo_data["observations"][min(cnt+1, len(self.demo_data["observations"]) - 1)]["pixels0"],
                     # "pixels0": rgb,
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
 
                 obs_1 = {
                     "features": feat_1,
-                    # "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
-                    "pixels0": self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]["pixels0"],
+                    "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+                    # "pixels0": self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]["pixels0"],
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
 
@@ -286,7 +286,7 @@ from omegaconf import DictConfig
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/174342/snapshot/86000.pt" # WORKING NONVISUAL POLICY
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/165806/snapshot/14000.pt" # visual bc
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/174604/snapshot/14000.pt" # visual bc
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
