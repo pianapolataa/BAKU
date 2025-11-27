@@ -139,13 +139,16 @@ class AgentRollout:
 
         try:
             cnt = 0
-            while time.time() - t0 < duration_s:
+            while cnt < 150:
                 cnt += 1
                 arm_state = self.get_arm_state()
                 ruka_state = self.handler.hand.read_pos()
                 demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
                 arm_state_1 = demo_obs["arm_states"].copy()
                 ruka_state_1 = demo_obs["ruka_states"].copy()
+                # --- Build feature vector including progress ---
+                progress_real = np.array([cnt / 150.0], dtype=np.float32)       # rollout progress
+                progress_demo = np.array([demo_obs.get("progress", 0.0)], dtype=np.float32)  # demo progress
 
                 quat = arm_state[3:7].copy()
                 if np.dot(ref_quat, quat) < 0:
@@ -153,8 +156,8 @@ class AgentRollout:
                     arm_state[3:7] = quat
 
                 # arm_state[:2] = arm_state_1[:2].copy()
-                feat = np.concatenate([arm_state.copy(), ruka_state.copy()], axis=0).astype(np.float32)
-                feat_1 = np.concatenate([arm_state_1.copy(), ruka_state_1.copy()], axis=0).astype(np.float32)
+                feat = np.concatenate([arm_state.copy(), ruka_state.copy(), progress_real], axis=0).astype(np.float32)
+                feat_1 = np.concatenate([arm_state_1.copy(), ruka_state_1.copy(), progress_demo], axis=0).astype(np.float32)
                 if (cnt == 1):
                     print(feat)
                     print(feat_1)
