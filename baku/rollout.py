@@ -203,7 +203,7 @@ class AgentRollout:
                     "action_1": action_1.copy()
                 })
                 
-                if (cnt < 2): action = action_1.copy()
+                if (cnt < 35): action = action_1.copy()
                 print(cnt)
 
                 arm_action = self.norm_quat_vec(action[:7])
@@ -285,8 +285,8 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/174342/snapshot/86000.pt" # WORKING NONVISUAL POLICY
-    # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/174604/snapshot/24000.pt" # visual bc
+    # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/174342/snapshot/86000.pt" # WORKING NONVISUAL POLICY
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/174604/snapshot/28000.pt" # visual bc
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
