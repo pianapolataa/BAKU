@@ -90,7 +90,7 @@ class CustomTeleopBCDataset(IterableDataset):
         idx = np.random.randint(0, self._num_samples)
         features = self.normalized_features[idx]
         actions = self.normalized_actions[idx]
-        pixels = self.observations[idx]["pixels0"].astype(np.float32) / 255.0
+        pixels = self.observations[idx]["pixels0"].astype(np.float32)
 
         # Libero-style features: (history_len, max_state_dim)
         feat = np.zeros((self.history_len, self.__max_state_dim), dtype=np.float32)
