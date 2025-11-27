@@ -41,7 +41,7 @@ def main(cfg: DictConfig):
 
     # Load trained BC snapshot
     bc_snapshot_path = Path(
-        "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/141253/snapshot/12000.pt" # visual bc
+        "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/154632/snapshot/5000.pt" # visual bc
     )
     workspace.load_snapshot({"bc": bc_snapshot_path})
     workspace.agent.train(False)
