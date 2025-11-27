@@ -84,7 +84,7 @@ def main(cfg: DictConfig):
 
         # --- Build obs and actions ---
         agent_obs = {
-            "features": np.concatenate([arm_state, obs_dict["ruka_states"]]).astype(np.float32),
+            "features": np.concatenate([arm_state, obs_dict["ruka_states"], np.array([obs_dict["progress"]], dtype=np.float32)]).astype(np.float32),
             "pixels0": obs_dict["pixels0"],
             "task_emb": np.asarray(demo_data["task_emb"], dtype=np.float32),
         }
