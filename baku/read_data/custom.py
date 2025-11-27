@@ -37,15 +37,15 @@ class CustomTeleopBCDataset(IterableDataset):
         self.min_ruka_cmd = np.array(data["min_ruka_commanded"], dtype=np.float32)
         self.max_ruka_cmd = np.array(data["max_ruka_commanded"], dtype=np.float32)
 
-        self.__max_state_dim = max(len(obs["arm_states"]) + len(obs["ruka_states"]) for obs in self.observations)
+        self.__max_state_dim = max(len(obs["arm_states"]) + len(obs["ruka_states"]) + 1 for obs in self.observations)
         self.__max_action_dim = max(len(obs["commanded_arm_states"]) + len(obs["commanded_ruka_states"]) for obs in self.observations)
         self._num_samples = len(self.observations)
 
         # stats dict for normalization
         self.stats = {
             "features": {
-                "min": np.concatenate([self.min_arm, self.min_ruka]),
-                "max": np.concatenate([self.max_arm, self.max_ruka]),
+                "min": np.concatenate([self.min_arm, self.min_ruka, np.array([0.0])]),
+                "max": np.concatenate([self.max_arm, self.max_ruka, np.array([1.0])])
             },
             "actions": {
                 "min": np.concatenate([self.min_arm_cmd, self.min_ruka_cmd]),
@@ -63,7 +63,10 @@ class CustomTeleopBCDataset(IterableDataset):
 
         for obs in self.observations:
             # features: arm + ruka
-            feat = np.concatenate([obs["arm_states"], obs["ruka_states"]], axis=0).astype(np.float32)
+            feat = np.concatenate(
+                [obs["arm_states"], obs["ruka_states"], np.array([obs["progress"]], dtype=np.float32)],
+                axis=0
+            ).astype(np.float32)
             feat = (feat - self.stats["features"]["min"]) / (
                 self.stats["features"]["max"] - self.stats["features"]["min"] + eps
             )
@@ -103,7 +106,7 @@ class CustomTeleopBCDataset(IterableDataset):
 
         return {
             # "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),
-            "pixels0": pixels[None, :, :, :].astype(np.float32) / 255.0,  # shape becomes (1, 3, 84, 84)
+            "pixels0": pixels[None, :, :, :].astype(np.float32),  # shape becomes (1, 3, 84, 84)
             "features": feat,
             "actions": sampled_actions,
             "task_emb": self.task_emb.astype(np.float32),

@@ -261,6 +261,8 @@ for d_idx, DEMO in enumerate(demo_dirs):
     arm_times = np.array([s["timestamp"] for s in arm_states])
     hand_times = np.array([s["timestamp"] for s in hand_states])
 
+    num_hand_frames = len(hand_times)
+    first = -1
     # Loop through hand frames
     for i, t in enumerate(tqdm(hand_times, desc=f"Sync {DEMO.name}")):
         obs = {}
@@ -283,6 +285,7 @@ for d_idx, DEMO in enumerate(demo_dirs):
         arm_idx = np.argmin(np.abs(arm_times - t))
         if abs(arm_times[arm_idx] - t) > 0.05:
             continue
+        if (first == -1): first = i
 
         # raw arm state
         arm_state = np.concatenate(
@@ -334,7 +337,7 @@ for d_idx, DEMO in enumerate(demo_dirs):
         obs["commanded_arm_states"] = cmd_state
         obs["ruka_states"] = np.array(hand_states[i]["state"], dtype=np.float32)
         obs["commanded_ruka_states"] = np.array(hand_commanded_states[i]["state"], dtype=np.float32)
-
+        obs["progress"] = (i - first) / (num_hand_frames - first)
         all_observations.append(obs)
         all_timestamps.append(float(t))
 
