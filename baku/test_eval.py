@@ -51,8 +51,8 @@ def main(cfg: DictConfig):
     # -----------------------------
     norm_stats = {
         "features": {
-            "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"]], np.array([0.0])),
-            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"]], np.array([1.0])),
+            "min": np.concatenate([demo_data["min_arm"], demo_data["min_ruka"], np.array([0.0])]),
+            "max": np.concatenate([demo_data["max_arm"], demo_data["max_ruka"], np.array([1.0])]),
         },
         "actions": {
             "min": np.concatenate([demo_data["min_arm_commanded"], demo_data["min_ruka_commanded"]]),
