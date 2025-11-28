@@ -139,7 +139,7 @@ class AgentRollout:
 
         try:
             cnt = 0
-            while cnt < 150:
+            while cnt < 200:
                 cnt += 1
                 arm_state = self.get_arm_state()
                 ruka_state = self.handler.hand.read_pos()
@@ -147,7 +147,7 @@ class AgentRollout:
                 arm_state_1 = demo_obs["arm_states"].copy()
                 ruka_state_1 = demo_obs["ruka_states"].copy()
                 # --- Build feature vector including progress ---
-                progress_real = np.array([cnt / 150.0], dtype=np.float32)       # rollout progress
+                progress_real = np.array([cnt / 200.0], dtype=np.float32)       # rollout progress
                 progress_demo = np.array([demo_obs.get("progress", 0.0)], dtype=np.float32)  # demo progress
 
                 quat = arm_state[3:7].copy()
