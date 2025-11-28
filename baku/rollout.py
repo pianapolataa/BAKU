@@ -127,7 +127,7 @@ class AgentRollout:
         """Convert BGR->RGB, resize, convert to CHW, float32, shape (1,3,H,W)."""
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         img = cv2.resize(img, size, interpolation=cv2.INTER_AREA)
-        img = img.astype(np.float32)
+        img = img.astype(np.float32) / 255.0
         img = np.transpose(img, (2, 0, 1))  # CHW
         return img  # (3,H,W)
 
