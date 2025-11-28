@@ -288,7 +288,7 @@ def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/174342/snapshot/86000.pt" # WORKING NONVISUAL POLICY
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/192038/snapshot/31000.pt" # kinda working nonvisual bc
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/200818/snapshot/25000.pt" # actual visual bc
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/200818/snapshot/24000.pt" # actual visual bc
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
