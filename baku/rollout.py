@@ -174,16 +174,16 @@ class AgentRollout:
 
                 obs = {
                     "features": feat,
-                    "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
+                    # "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
                     # "pixels0": self.demo_data["observations"][min(cnt+1, len(self.demo_data["observations"]) - 1)]["pixels0"],
-                    # "pixels0": rgb,
+                    "pixels0": rgb,
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
 
                 obs_1 = {
                     "features": feat_1,
                     "pixels0": np.zeros((3, 84, 84), dtype=np.uint8),
-                    # "pixels0": self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]["pixels0"],
+                    "pixels0": self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]["pixels0"],
                     "task_emb": np.asarray(self.demo_data["task_emb"], dtype=np.float32),
                 }
 
