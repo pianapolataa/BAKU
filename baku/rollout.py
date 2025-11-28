@@ -203,7 +203,7 @@ class AgentRollout:
                     "action_1": action_1.copy()
                 })
                 
-                if (cnt < 10): action = action_1.copy()
+                if (cnt < 2): action = action_1.copy()
                 print(cnt)
 
                 arm_action = self.norm_quat_vec(action[:7])
