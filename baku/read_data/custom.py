@@ -29,13 +29,13 @@ class CustomTeleopBCDataset(IterableDataset):
         # Extract min/max for normalization
         self.min_arm = np.array(data["min_arm"], dtype=np.float32)
         self.max_arm = np.array(data["max_arm"], dtype=np.float32)
+        # weight arm position
+        self.max_arm[:3] = self.min_arm[:3] + 0.5 * (self.max_arm[:3] - self.min_arm[:3])
         self.min_ruka = np.array(data["min_ruka"], dtype=np.float32)
         self.max_ruka = np.array(data["max_ruka"], dtype=np.float32)
 
         self.min_arm_cmd = np.array(data["min_arm_commanded"], dtype=np.float32)
         self.max_arm_cmd = np.array(data["max_arm_commanded"], dtype=np.float32)
-        # weight arm position
-        self.max_arm_cmd[:3] = self.min_arm_cmd[:3] + 0.5 * (self.max_arm_cmd[:3] - self.min_arm_cmd[:3])
 
         self.min_ruka_cmd = np.array(data["min_ruka_commanded"], dtype=np.float32)
         self.max_ruka_cmd = np.array(data["max_ruka_commanded"], dtype=np.float32)
