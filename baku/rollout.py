@@ -137,7 +137,7 @@ class AgentRollout:
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
 
-        num_steps = 150.0
+        num_steps = 117.0
         try:
             cnt = 0
             while cnt < num_steps:
@@ -288,7 +288,7 @@ def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.24_train/deterministic/174342/snapshot/86000.pt" # WORKING NONVISUAL POLICY
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.11.27_train/deterministic/200818/snapshot/24000.pt" # working no variation visual bc
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.02_train/deterministic/193517/snapshot/37000.pt" # variation visual bc
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.02_train/deterministic/183626/snapshot/53000.pt" # variation visual bc
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
