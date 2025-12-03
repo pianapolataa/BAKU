@@ -30,7 +30,7 @@ class CustomTeleopBCDataset(IterableDataset):
         self.min_arm = np.array(data["min_arm"], dtype=np.float32)
         self.max_arm = np.array(data["max_arm"], dtype=np.float32)
         # weight arm position
-        self.max_arm[2] = self.min_arm[2] + 0.5 * (self.max_arm[2] - self.min_arm[2])
+        self.max_arm[2] = self.min_arm[2] + 0.33 * (self.max_arm[2] - self.min_arm[2])
         self.min_ruka = np.array(data["min_ruka"], dtype=np.float32)
         self.max_ruka = np.array(data["max_ruka"], dtype=np.float32)
 
