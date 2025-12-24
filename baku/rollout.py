@@ -137,7 +137,7 @@ class AgentRollout:
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
 
-        num_steps = 150.0
+        num_steps = 1500.0
         try:
             cnt = 0
             while cnt < num_steps:
