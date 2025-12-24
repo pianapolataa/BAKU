@@ -8,7 +8,7 @@ from tqdm import tqdm
 # ----------------------------
 # CONFIGURATION
 # ----------------------------
-DATA_ROOT = Path("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/data")
+DATA_ROOT = Path("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/music_data")
 IMG_SIZE = (84, 84)
 SAVE_PATH = Path("/home_shared/grail_sissi/BAKU/processed_data_pkl")
 SAVE_PATH.mkdir(parents=True, exist_ok=True)
@@ -55,7 +55,7 @@ fixed_counts = {"global_flips": 0, "continuity_flips": 0}
 # ----------------------------
 for d_idx, DEMO in enumerate(demo_dirs):
     print(f"\n=== Processing {DEMO.name} ===")
-    if DEMO.name == "demonstration_70": continue
+    if DEMO.name == "demonstration_22": continue
 
     # Load pkl data
     with open(DEMO / "states.pkl", "rb") as f:
