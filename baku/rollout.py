@@ -91,7 +91,7 @@ class AgentRollout:
         # -----------------------------
         # Setup IP camera for live RGB
         # -----------------------------
-        self.cam_url = "http://10.21.100.157:4747/video"
+        self.cam_url = "http://10.21.8.220:4747/video"
         self.cam = cv2.VideoCapture(self.cam_url)
 
         if not self.cam.isOpened():
@@ -286,7 +286,8 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.03_train/deterministic/140501/snapshot/53000.pt" # working variation bread pickup visual bc
+    # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.03_train/deterministic/140501/snapshot/53000.pt" # working variation bread pickup visual bc
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.24_train/deterministic/141439/snapshot/20000.pt"
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
