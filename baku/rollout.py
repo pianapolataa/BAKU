@@ -137,7 +137,7 @@ class AgentRollout:
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
 
-        num_steps = 1500.0
+        num_steps = 100.0
         try:
             cnt = 0
             while cnt < num_steps:
@@ -204,7 +204,7 @@ class AgentRollout:
                     "action_1": action_1.copy()
                 })
                 
-                if (cnt < 2): action = action_1.copy()
+                if (cnt < 200): action = action_1.copy()
                 print(cnt)
 
                 arm_action = self.norm_quat_vec(action[:7])
