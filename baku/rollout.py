@@ -433,7 +433,7 @@ class AgentRollout:
         dt = 1.0 / freq
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
-        num_steps = 120
+        num_steps = 80
 
         try:
             for cnt in range(num_steps):
