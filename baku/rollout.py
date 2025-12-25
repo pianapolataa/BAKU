@@ -433,18 +433,17 @@ class AgentRollout:
         dt = 1.0 / freq
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
-        history_len = self.workspace.agent.history_len  # get agent's expected history length
-
         num_steps = 70
+
         try:
-            for cnt in range(1, num_steps + 1):
+            for cnt in range(num_steps):
                 arm_state = self.get_arm_state()
                 ruka_state = self.handler.hand.read_pos()
                 demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
-                arm_state_demo = demo_obs["arm_states"].copy()
-                ruka_state_demo = demo_obs["ruka_states"].copy()
+                arm_demo = demo_obs["arm_states"].copy()
+                ruka_demo = demo_obs["ruka_states"].copy()
 
-                # --- Build feature vector including progress ---
+                # Rollout progress
                 progress_real = np.array([cnt / num_steps], dtype=np.float32)
                 progress_demo = np.array([demo_obs.get("progress", 0.0)], dtype=np.float32)
 
@@ -453,67 +452,61 @@ class AgentRollout:
                     quat *= -1.0
                     arm_state[3:7] = quat
 
-                feat_real = np.concatenate([arm_state, ruka_state, progress_real], axis=0).astype(np.float32)
-                feat_demo = np.concatenate([arm_state_demo, ruka_state_demo, progress_demo], axis=0).astype(np.float32)
-                if cnt == 1:
-                    feat_real = feat_demo.copy()  # start from demo
+                # Features (with batch dim)
+                feat_seq = np.expand_dims(np.concatenate([arm_state, ruka_state, progress_real], axis=0), 0)
+                feat_seq_demo = np.expand_dims(np.concatenate([arm_demo, ruka_demo, progress_demo], axis=0), 0)
 
-                # --- Grab camera frame ---
+                # Grab camera frame
                 ret, frame = self.cam.read()
                 if not ret:
                     raise RuntimeError("Failed to read frame from IP camera")
                 rgb = self.load_and_resize_rgb(frame, size=(84, 84))  # (3,H,W)
-                rgb = rgb[None, :, :, :]  # add batch dim: (1,3,H,W)
-
-                # --- Tile features & task_emb for history_len ---
-                feat_seq = np.tile(feat_real[None, :], (history_len, 1))   # (history_len, feature_dim)
-                task_emb_seq = np.tile(np.asarray(self.demo_data["task_emb"], dtype=np.float32)[None, :],
-                                    (history_len, 1))
 
                 obs = {
                     "features": feat_seq,
-                    "pixels0": np.tile(rgb, (history_len, 1, 1, 1)),  # (history_len, 3,H,W)
-                    "task_emb": task_emb_seq,
+                    "pixels0": rgb,
+                    "task_emb": np.expand_dims(np.asarray(self.demo_data["task_emb"], dtype=np.float32), 0)
+                }
+
+                obs_demo = {
+                    "features": feat_seq_demo,
+                    "pixels0": rgb,
+                    "task_emb": np.expand_dims(np.asarray(self.demo_data["task_emb"], dtype=np.float32), 0)
                 }
 
                 with torch.no_grad():
                     action = self.workspace.agent.act(obs, prompt=None, norm_stats=self.norm_stats,
                                                     step=0, global_step=self.workspace.global_step,
                                                     eval_mode=True)
+                    action_demo = self.workspace.agent.act(obs_demo, prompt=None, norm_stats=self.norm_stats,
+                                                        step=0, global_step=self.workspace.global_step,
+                                                        eval_mode=True)
                     if isinstance(action, torch.Tensor):
                         action = action.cpu().numpy()
+                    if isinstance(action_demo, torch.Tensor):
+                        action_demo = action_demo.cpu().numpy()
 
-                # --- Always store for plotting ---
                 self.logged_data.append({
                     "timestamp": time.time() - t0,
-                    "action": action.copy()
+                    "action": action.copy(),
+                    "action_demo": action_demo.copy()
                 })
 
-                # --- First step: override with demo ---
-                if cnt == 1:
-                    action = feat_demo.copy()  # optional: can use demo action if needed
+                # Use demo first step to stabilize
+                if cnt < 2:
+                    action = action_demo.copy()
 
-                # --- Apply arm + hand actions ---
                 arm_action = self.norm_quat_vec(action[:7])
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
+                hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
 
-                franka_action = FrankaAction(
-                    pos=arm_action[:3],
-                    quat=arm_action[3:7],
-                    gripper=-1,
-                    reset=False,
-                    timestamp=time.time(),
-                )
+                franka_action = FrankaAction(pos=arm_action[:3], quat=arm_action[3:7], gripper=-1,
+                                            reset=False, timestamp=time.time())
                 self.arm_socket.send(pickle.dumps(franka_action, protocol=-1))
                 _ = self.arm_socket.recv()
 
-                hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
                 move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.handler.hand, traj_len=20)
-
-                # --- Maintain rollout frequency ---
-                elapsed = time.time() - t0
-                next_time = (cnt + 1) * dt
-                time.sleep(max(0, next_time - elapsed))
+                time.sleep(dt)
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
@@ -523,11 +516,32 @@ class AgentRollout:
             self.handler.hand.close()
             if hasattr(self, "cam"):
                 self.cam.release()
-
             if self.save_log and self.logged_data:
                 with open(self.log_path, "wb") as f:
                     pickle.dump(self.logged_data, f)
                 print(f"Saved rollout log to {self.log_path}")
+
+            # Plot actions
+            if self.logged_data:
+                timestamps = [d["timestamp"] for d in self.logged_data]
+                full_actions = np.stack([d["action"] for d in self.logged_data], axis=0)
+                full_demo = np.stack([d["action_demo"] for d in self.logged_data], axis=0)
+                fig, axes = plt.subplots(5, 5, figsize=(20, 20), sharex=True)
+                axes = axes.flatten()
+                labels = [f"dim_{i}" for i in range(full_actions.shape[1])]
+                for i in range(full_actions.shape[1]):
+                    axes[i].plot(timestamps, full_actions[:, i], label="rollout")
+                    axes[i].plot(timestamps, full_demo[:, i], label="demo", linestyle="--")
+                    axes[i].set_ylabel(labels[i])
+                    axes[i].grid(True)
+                    axes[i].legend(fontsize=8)
+                for i in range(full_actions.shape[1], len(axes)):
+                    axes[i].axis("off")
+                axes[-1].set_xlabel("Time [s]")
+                plt.tight_layout()
+                plt.savefig(self.plot_path)
+                plt.close(fig)
+                print(f"Saved action plot to {self.plot_path}")
 
 
 
