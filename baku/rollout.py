@@ -541,7 +541,7 @@ from omegaconf import DictConfig
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.03_train/deterministic/140501/snapshot/53000.pt" # working variation bread pickup visual bc
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.24_train/deterministic/215958/snapshot/20000.pt" #2107 working music box  #215958
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.24_train/deterministic/215958/snapshot/27000.pt" #2107 working music box  #215958
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
