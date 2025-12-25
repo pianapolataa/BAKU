@@ -442,6 +442,9 @@ class AgentRollout:
                 demo_obs = self.demo_data["observations"][min(cnt, len(self.demo_data["observations"]) - 1)]
                 arm_demo = demo_obs["arm_states"].copy()
                 ruka_demo = demo_obs["ruka_states"].copy()
+                if (cnt < 2):
+                    ruka_state = ruka_demo.copy()
+                    arm_state = arm_demo.copy()
 
                 # Rollout progress
                 progress_real = np.array([cnt / num_steps], dtype=np.float32)
@@ -496,10 +499,6 @@ class AgentRollout:
                     "action": action.copy(),
                     "action_demo": action_demo.copy()
                 })
-
-                # Use demo first step to stabilize
-                if cnt < 2:
-                    action = action_demo.copy()
 
                 # Apply to Franka & Ruka
                 arm_action = self.norm_quat_vec(action[:7])
