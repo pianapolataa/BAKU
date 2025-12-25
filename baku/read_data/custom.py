@@ -96,6 +96,10 @@ class CustomTeleopBCDataset(IterableDataset):
         # Libero-style features: (history_len, max_state_dim)
         feat = np.zeros((self.history_len, self.__max_state_dim), dtype=np.float32)
         feat[0, :features.shape[0]] = features
+        task_emb_t = np.tile(
+            self.task_emb[None, :],        # (1, E)
+            (self.history_len, 1)          # (T, E)
+        )
 
         # Libero-style actions: (history_len, action_repeat, action_dim)
         if self.temporal_agg:
@@ -110,7 +114,7 @@ class CustomTeleopBCDataset(IterableDataset):
             "pixels0": pixels[None, :, :, :].astype(np.float32),  # shape becomes (1, 3, 84, 84)
             "features": feat,
             "actions": sampled_actions,
-            "task_emb": self.task_emb.astype(np.float32),
+            "task_emb": task_emb_t.astype(np.float32),  # (T, E)
         }
 
     def __iter__(self):
