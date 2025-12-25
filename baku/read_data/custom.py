@@ -14,7 +14,7 @@ class CustomTeleopBCDataset(IterableDataset):
       - "task_emb": task embedding vector
     """
 
-    def __init__(self, pkl_file, action_repeat: int = 10, history_len: int = 10, temporal_agg: bool = True):
+    def __init__(self, pkl_file, action_repeat: int = 10, history_len: int = 1, temporal_agg: bool = True):
         self.pkl_file = pkl_file
         self.action_repeat = int(action_repeat)
         self.history_len = int(history_len)
@@ -96,14 +96,6 @@ class CustomTeleopBCDataset(IterableDataset):
         # Libero-style features: (history_len, max_state_dim)
         feat = np.zeros((self.history_len, self.__max_state_dim), dtype=np.float32)
         feat[0, :features.shape[0]] = features
-        task_emb_t = np.tile(
-            self.task_emb[None, :],        # (1, E)
-            (self.history_len, 1)          # (T, E)
-        )
-        pixels_t = np.tile(
-            pixels[None, :, :, :],
-            (self.history_len, 1, 1, 1)
-        )
 
         # Libero-style actions: (history_len, action_repeat, action_dim)
         if self.temporal_agg:
@@ -115,10 +107,10 @@ class CustomTeleopBCDataset(IterableDataset):
 
         return {
             # "pixels0": np.zeros((1, 3, 84, 84), dtype=np.float32),
-            "pixels0": pixels_t,  # shape becomes (1, 3, 84, 84)
+            "pixels0": pixels[None, :, :, :].astype(np.float32),  # shape becomes (1, 3, 84, 84)
             "features": feat,
             "actions": sampled_actions,
-            "task_emb": task_emb_t.astype(np.float32),  # (T, E)
+            "task_emb": self.task_emb.astype(np.float32),
         }
 
     def __iter__(self):
@@ -141,3 +133,9 @@ class CustomTeleopBCDataset(IterableDataset):
     def envs_till_idx(self):
         return 1
 
+    def sample_test(self, env_idx, step=None):
+        return {
+            "prompt_features": None,
+            "prompt_actions": None,
+            "task_emb": self.task_emb.astype(np.float32),
+        }
