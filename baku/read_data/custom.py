@@ -14,7 +14,7 @@ class CustomTeleopBCDataset(IterableDataset):
       - "task_emb": task embedding vector
     """
 
-    def __init__(self, pkl_file, action_repeat: int = 10, history_len: int = 1, temporal_agg: bool = True):
+    def __init__(self, pkl_file, action_repeat: int = 10, history_len: int = 10, temporal_agg: bool = True):
         self.pkl_file = pkl_file
         self.action_repeat = int(action_repeat)
         self.history_len = int(history_len)
