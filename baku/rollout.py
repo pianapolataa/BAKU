@@ -434,6 +434,7 @@ class AgentRollout:
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
         num_steps = 70
+        history_len = 1  # can increase if you want sequence
 
         try:
             for cnt in range(num_steps):
@@ -452,9 +453,11 @@ class AgentRollout:
                     quat *= -1.0
                     arm_state[3:7] = quat
 
-                # Features (with batch dim)
-                feat_seq = np.expand_dims(np.concatenate([arm_state, ruka_state, progress_real], axis=0), 0)
-                feat_seq_demo = np.expand_dims(np.concatenate([arm_demo, ruka_demo, progress_demo], axis=0), 0)
+                # --- Build history-like feature sequences ---
+                feat = np.zeros((history_len, len(arm_state) + len(ruka_state) + 1), dtype=np.float32)
+                feat[0] = np.concatenate([arm_state, ruka_state, progress_real], axis=0)
+                feat_demo = np.zeros_like(feat)
+                feat_demo[0] = np.concatenate([arm_demo, ruka_demo, progress_demo], axis=0)
 
                 # Grab camera frame
                 ret, frame = self.cam.read()
@@ -462,16 +465,23 @@ class AgentRollout:
                     raise RuntimeError("Failed to read frame from IP camera")
                 rgb = self.load_and_resize_rgb(frame, size=(84, 84))  # (3,H,W)
 
+                # Tile pixels0 to history_len
+                pixels_seq = np.tile(rgb[None, :, :, :], (history_len, 1, 1, 1))
+                pixels_seq_demo = pixels_seq.copy()
+
+                # Tile task embedding
+                task_emb_seq = np.tile(np.asarray(self.demo_data["task_emb"], dtype=np.float32)[None, :], (history_len, 1))
+
                 obs = {
-                    "features": feat_seq,
-                    "pixels0": rgb,
-                    "task_emb": np.expand_dims(np.asarray(self.demo_data["task_emb"], dtype=np.float32), 0)
+                    "features": feat,
+                    "pixels0": pixels_seq,
+                    "task_emb": task_emb_seq
                 }
 
                 obs_demo = {
-                    "features": feat_seq_demo,
-                    "pixels0": rgb,
-                    "task_emb": np.expand_dims(np.asarray(self.demo_data["task_emb"], dtype=np.float32), 0)
+                    "features": feat_demo,
+                    "pixels0": pixels_seq_demo,
+                    "task_emb": task_emb_seq
                 }
 
                 with torch.no_grad():
@@ -496,6 +506,7 @@ class AgentRollout:
                 if cnt < 2:
                     action = action_demo.copy()
 
+                # Apply to Franka & Ruka
                 arm_action = self.norm_quat_vec(action[:7])
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
@@ -521,27 +532,6 @@ class AgentRollout:
                     pickle.dump(self.logged_data, f)
                 print(f"Saved rollout log to {self.log_path}")
 
-            # Plot actions
-            if self.logged_data:
-                timestamps = [d["timestamp"] for d in self.logged_data]
-                full_actions = np.stack([d["action"] for d in self.logged_data], axis=0)
-                full_demo = np.stack([d["action_demo"] for d in self.logged_data], axis=0)
-                fig, axes = plt.subplots(5, 5, figsize=(20, 20), sharex=True)
-                axes = axes.flatten()
-                labels = [f"dim_{i}" for i in range(full_actions.shape[1])]
-                for i in range(full_actions.shape[1]):
-                    axes[i].plot(timestamps, full_actions[:, i], label="rollout")
-                    axes[i].plot(timestamps, full_demo[:, i], label="demo", linestyle="--")
-                    axes[i].set_ylabel(labels[i])
-                    axes[i].grid(True)
-                    axes[i].legend(fontsize=8)
-                for i in range(full_actions.shape[1], len(axes)):
-                    axes[i].axis("off")
-                axes[-1].set_xlabel("Time [s]")
-                plt.tight_layout()
-                plt.savefig(self.plot_path)
-                plt.close(fig)
-                print(f"Saved action plot to {self.plot_path}")
 
 
 
