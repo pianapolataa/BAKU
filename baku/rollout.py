@@ -434,7 +434,6 @@ class AgentRollout:
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
         num_steps = 70
-        history_len = 1  # can increase if you want sequence
 
         try:
             for cnt in range(num_steps):
@@ -453,37 +452,32 @@ class AgentRollout:
                     quat *= -1.0
                     arm_state[3:7] = quat
 
-                # --- Build history-like feature sequences ---
-                feat = np.zeros((history_len, len(arm_state) + len(ruka_state) + 1), dtype=np.float32)
-                feat[0] = np.concatenate([arm_state, ruka_state, progress_real], axis=0)
-                feat_demo = np.zeros_like(feat)
-                feat_demo[0] = np.concatenate([arm_demo, ruka_demo, progress_demo], axis=0)
+                # --- Build feature vector ---
+                feat = np.concatenate([arm_state, ruka_state, progress_real], axis=0).astype(np.float32)
+                feat_demo = np.concatenate([arm_demo, ruka_demo, progress_demo], axis=0).astype(np.float32)
 
                 # Grab camera frame
                 ret, frame = self.cam.read()
                 if not ret:
                     raise RuntimeError("Failed to read frame from IP camera")
-                rgb = self.load_and_resize_rgb(frame, size=(84, 84))  # (3,H,W)
+                rgb = self.load_and_resize_rgb(frame, size=(84, 84))  # shape: (C,H,W)
 
-                # Tile pixels0 to history_len
-                pixels_seq = np.tile(rgb[None, :, :, :], (history_len, 1, 1, 1))
-                pixels_seq_demo = pixels_seq.copy()
-
-                # Tile task embedding
-                task_emb_seq = np.tile(np.asarray(self.demo_data["task_emb"], dtype=np.float32)[None, :], (history_len, 1))
+                # Task embedding
+                task_emb = np.asarray(self.demo_data["task_emb"], dtype=np.float32)
 
                 obs = {
                     "features": feat,
-                    "pixels0": pixels_seq,
-                    "task_emb": task_emb_seq
+                    "pixels0": rgb,        # keep (C,H,W) for single-step
+                    "task_emb": task_emb
                 }
 
                 obs_demo = {
                     "features": feat_demo,
-                    "pixels0": pixels_seq_demo,
-                    "task_emb": task_emb_seq
+                    "pixels0": rgb.copy(), # same shape
+                    "task_emb": task_emb
                 }
 
+                # --- Agent act ---
                 with torch.no_grad():
                     action = self.workspace.agent.act(obs, prompt=None, norm_stats=self.norm_stats,
                                                     step=0, global_step=self.workspace.global_step,
@@ -496,6 +490,7 @@ class AgentRollout:
                     if isinstance(action_demo, torch.Tensor):
                         action_demo = action_demo.cpu().numpy()
 
+                # Logging
                 self.logged_data.append({
                     "timestamp": time.time() - t0,
                     "action": action.copy(),
