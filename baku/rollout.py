@@ -498,7 +498,7 @@ class AgentRollout:
                 })
 
                 # Use demo first step to stabilize
-                if cnt < 200:
+                if cnt < 2:
                     action = action_demo.copy()
 
                 # Apply to Franka & Ruka
