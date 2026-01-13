@@ -388,7 +388,7 @@ class AgentRollout:
         # -----------------------------
         # Setup IP camera for live RGB
         # -----------------------------
-        self.cam_url = "http://10.21.8.220:4747/video"
+        self.cam_url = "http://10.21.35.3:4747/video"
         self.cam = cv2.VideoCapture(self.cam_url)
 
         if not self.cam.isOpened():
