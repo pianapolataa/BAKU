@@ -498,7 +498,7 @@ class AgentRollout:
                 })
 
                 # Use demo first step to stabilize
-                if cnt < 2:
+                if cnt < 200:
                     action = action_demo.copy()
 
                 # Apply to Franka & Ruka
@@ -540,8 +540,8 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.03_train/deterministic/140501/snapshot/53000.pt" # working variation bread pickup visual bc
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.25_train/deterministic/105414/snapshot/43000.pt" # moving music box
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.13_train/deterministic/164847/snapshot/9000.pt" 
+    # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.25_train/deterministic/105414/snapshot/43000.pt" # moving music box
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
     rollout.run(duration_s=180, freq=50)
