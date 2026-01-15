@@ -540,7 +540,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.14_train/deterministic/222512/snapshot/57000.pt" 
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.14_train/deterministic/222512/snapshot/52000.pt" 
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.25_train/deterministic/105414/snapshot/43000.pt" # working music box
 
     rollout = AgentRollout(cfg, demo_data_path, snapshot_path, save_log=True)
