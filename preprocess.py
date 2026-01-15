@@ -56,6 +56,7 @@ fixed_counts = {"global_flips": 0, "continuity_flips": 0}
 for d_idx, DEMO in enumerate(demo_dirs):
     print(f"\n=== Processing {DEMO.name} ===")
     if DEMO.name == "demonstration_127": continue
+    if DEMO.name == "demonstration_102": continue
 
     # Load pkl data
     with open(DEMO / "states.pkl", "rb") as f:
