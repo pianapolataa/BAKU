@@ -503,7 +503,7 @@ class AgentRollout:
 
                 # Apply to Franka & Ruka
                 arm_action = self.norm_quat_vec(action[:7])
-                arm_action[2] -= 0.007
+                arm_action[2] -= 0.017
                 arm_action[1] -= 0.005
                 arm_action[0] -= 0.005
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
