@@ -210,7 +210,7 @@ class AgentRollout:
                 # arm_action[2] -= 0.005
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
-                if hand_action[5] > 2000:
+                if hand_action[5] > 2100:
                     hand_action[4] = 1800
 
                 franka_action = FrankaAction(pos=arm_action[:3], quat=arm_action[3:7], gripper=-1,
@@ -243,7 +243,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.16_train/deterministic/105856/snapshot/52000.pt" # bread pick 2
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.16_train/deterministic/105856/snapshot/62000.pt" # bread pick 2
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.14_train/deterministic/222512/snapshot/43000.pt" #working bread pick 1
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.25_train/deterministic/105414/snapshot/43000.pt" # working music box
 
