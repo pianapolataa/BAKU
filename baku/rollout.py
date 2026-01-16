@@ -136,7 +136,7 @@ class AgentRollout:
         dt = 1.0 / freq
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
-        num_steps = 200
+        num_steps = 300
 
         try:
             for cnt in range(num_steps):
@@ -207,7 +207,7 @@ class AgentRollout:
                 # Apply to Franka & Ruka
                 arm_action = self.norm_quat_vec(action[:7])
                 print(cnt)
-                arm_action[2] -= 0.007
+                arm_action[2] -= 0.017
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
 
