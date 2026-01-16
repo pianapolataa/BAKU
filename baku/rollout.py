@@ -515,7 +515,7 @@ class AgentRollout:
                 _ = self.arm_socket.recv()
 
                 move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.handler.hand, traj_len=20)
-                time.sleep(dt)
+                time.sleep(dt * 2 / 3)
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
