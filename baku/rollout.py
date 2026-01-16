@@ -136,7 +136,7 @@ class AgentRollout:
         dt = 1.0 / freq
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
-        num_steps = 250
+        num_steps = 300
 
         try:
             for cnt in range(num_steps):
@@ -207,11 +207,8 @@ class AgentRollout:
                 # Apply to Franka & Ruka
                 arm_action = self.norm_quat_vec(action[:7])
                 print(cnt)
-                arm_action[2] -= 0.002
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
-                if hand_action[5] > 2080:
-                    hand_action[4] = 1800
 
                 franka_action = FrankaAction(pos=arm_action[:3], quat=arm_action[3:7], gripper=-1,
                                             reset=False, timestamp=time.time())
@@ -234,16 +231,13 @@ class AgentRollout:
                     pickle.dump(self.logged_data, f)
                 print(f"Saved rollout log to {self.log_path}")
 
-# ------------------------------------------------------------
-# Hydra entry point
-# ------------------------------------------------------------
 import hydra
 from omegaconf import DictConfig
 
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.16_train/deterministic/105856/snapshot/47000.pt" # bread pick 2
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.16_train/deterministic/105856/snapshot/47000.pt" # working bread pick 2
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.14_train/deterministic/222512/snapshot/43000.pt" #working bread pick 1
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.25_train/deterministic/105414/snapshot/43000.pt" # working music box
 
