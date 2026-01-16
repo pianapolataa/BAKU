@@ -136,7 +136,7 @@ class AgentRollout:
         dt = 1.0 / freq
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
-        num_steps = 300
+        num_steps = 250
 
         try:
             for cnt in range(num_steps):
@@ -210,7 +210,7 @@ class AgentRollout:
                 # arm_action[2] -= 0.005
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
-                if hand_action[5] > 2100:
+                if hand_action[5] > 2000:
                     hand_action[4] = 1800
 
                 franka_action = FrankaAction(pos=arm_action[:3], quat=arm_action[3:7], gripper=-1,
