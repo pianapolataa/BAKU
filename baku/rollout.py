@@ -433,7 +433,7 @@ class AgentRollout:
         dt = 1.0 / freq
         t0 = time.time()
         ref_quat = self.demo_data["observations"][0]["arm_states"][3:7].astype(np.float32)
-        num_steps = 150
+        num_steps = 200
 
         try:
             for cnt in range(num_steps):
@@ -515,7 +515,7 @@ class AgentRollout:
                 _ = self.arm_socket.recv()
 
                 move_to_pos(curr_pos=ruka_state, des_pos=hand_action, hand=self.handler.hand, traj_len=20)
-                time.sleep(dt * 2 / 3)
+                time.sleep(dt /2)
 
         except KeyboardInterrupt:
             print("Rollout interrupted by user.")
