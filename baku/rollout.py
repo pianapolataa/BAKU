@@ -210,7 +210,7 @@ class AgentRollout:
                 # arm_action[2] -= 0.005
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
-                if hand_action[5] > 2200:
+                if hand_action[5] > 2100:
                     hand_action[4] = 1800
 
                 franka_action = FrankaAction(pos=arm_action[:3], quat=arm_action[3:7], gripper=-1,
