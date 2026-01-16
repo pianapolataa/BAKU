@@ -15,7 +15,7 @@ from frankateach.messages import FrankaAction
 from frankateach.network import create_request_socket
 from frankateach.constants import *
 
-sys.path.append(os.path.expanduser("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/RUKA"))
+# sys.path.append(os.path.expanduser("/home_shared/grail_sissi/BAKU/baku/vr-hand-tracking/Franka-Teach/RUKA"))
 # --- Ruka imports ---
 from ruka_hand.control.hand import Hand
 from ruka_hand.utils.trajectory import move_to_pos
