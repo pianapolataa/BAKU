@@ -207,7 +207,7 @@ class AgentRollout:
                 # Apply to Franka & Ruka
                 arm_action = self.norm_quat_vec(action[:7])
                 print(cnt)
-                arm_action[2] -= 0.01
+                arm_action[2] -= 0.007
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
                 if hand_action[5] > 2200:
