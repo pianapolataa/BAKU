@@ -205,7 +205,7 @@ class AgentRollout:
                 print(cnt)
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
-                hand_action[14] = (hand_action[14] - 1990) / 2 + 1990
+                # hand_action[14] = (hand_action[14] - 1990) / 2 + 1990
 
                 franka_action = FrankaAction(pos=arm_action[:3], quat=arm_action[3:7], gripper=-1,
                                             reset=False, timestamp=time.time())
