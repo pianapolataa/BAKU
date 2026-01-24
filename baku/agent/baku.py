@@ -458,7 +458,7 @@ class BCAgent:
                     self.max_episode_len + self.num_queries,
                     self._act_dim,
                 ]
-            ).to("cpu")
+            ).to(self.device)
 
     def clear_buffers(self):
         del self.observation_buffer
