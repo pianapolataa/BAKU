@@ -225,7 +225,7 @@ class BCAgent:
 
         # action chunking params
         self.temporal_agg = temporal_agg
-        self.max_episode_len = max_episode_len
+        self.max_episode_len = 1000
         self.num_queries = num_queries if self.temporal_agg else 1
 
         # number of inputs per time step
