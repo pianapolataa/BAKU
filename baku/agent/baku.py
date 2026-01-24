@@ -459,6 +459,7 @@ class BCAgent:
                     self._act_dim,
                 ]
             ).to(self.device)
+            print(f"DEBUG ALLOCATION: max_steps={self.max_episode_len}, num_envs={self.num_queries}, action_dim={self._act_dim}")
 
     def clear_buffers(self):
         del self.observation_buffer
