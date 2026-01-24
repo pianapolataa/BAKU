@@ -217,7 +217,7 @@ TASK_NAME = "demo_task"
 
 # UPSAMPLING CONFIG
 PRECISION_START_FRAME = 50
-UPSAMPLE_FACTOR = 5  # Each precision frame will appear 5 times total
+UPSAMPLE_FACTOR = 2  # Each precision frame will appear 5 times total
 
 def flip_to_reference(quat, ref):
     return quat if np.dot(quat, ref) >= 0 else -quat
