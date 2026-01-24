@@ -187,7 +187,7 @@ class BCAgent:
         use_language,
         film,
     ):
-        self.device = device
+        self.device = "cpu"
         self.lr = lr
         self.hidden_dim = hidden_dim
         self.stddev_schedule = stddev_schedule
