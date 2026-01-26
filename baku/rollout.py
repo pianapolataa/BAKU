@@ -207,8 +207,6 @@ class AgentRollout:
                 arm_action[:3] = np.clip(arm_action[:3], a_min=ROBOT_WORKSPACE_MIN, a_max=ROBOT_WORKSPACE_MAX)
                 hand_action = np.clip(action[7:], self.handler.hand.min_lim, self.handler.hand.max_lim)
                 # hand_action[14] = (hand_action[14] - 1990) / 2 + 1990
-                if hand_action[7] == 1950:
-                    hand_action[3] = 2160
 
                 franka_action = FrankaAction(pos=arm_action[:3], quat=arm_action[3:7], gripper=-1,
                                             reset=False, timestamp=time.time())
@@ -237,7 +235,7 @@ from omegaconf import DictConfig
 @hydra.main(config_path="/home_shared/grail_sissi/BAKU/baku/cfgs", config_name="config")
 def main(cfg: DictConfig):
     demo_data_path = "/home_shared/grail_sissi/BAKU/processed_data_pkl/demo_task.pkl"
-    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.26_train/deterministic/122455/snapshot/26000.pt" # marker picking v2
+    snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.26_train/deterministic/122455/snapshot/37000.pt" # marker picking v2
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.26_train/deterministic/105432/snapshot/27000.pt" # marker picking 01/26
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2026.01.16_train/deterministic/105856/snapshot/47000.pt" # working bread pick 2
     # snapshot_path = "/home_shared/grail_sissi/BAKU/baku/exp_local/2025.12.25_train/deterministic/105414/snapshot/43000.pt" # working music box
